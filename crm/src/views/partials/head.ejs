@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= title %> · Yellow Pages CRM</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/">YP<span>CRM</span></a>
+  <nav>
+    <a href="/" class="<%= path === '/' ? 'active' : '' %>">Dashboard</a>
+    <a href="/accounts" class="<%= path.startsWith('/accounts') ? 'active' : '' %>">Accounts</a>
+    <a href="/opportunities" class="<%= path.startsWith('/opportunities') ? 'active' : '' %>">Pipeline</a>
+    <a href="/orders" class="<%= path.startsWith('/orders') ? 'active' : '' %>">Orders</a>
+    <a href="/directories" class="<%= path.startsWith('/directories') || path.startsWith('/editions') || path.startsWith('/products') ? 'active' : '' %>">Directories</a>
+    <a href="/invoices" class="<%= path.startsWith('/invoices') || path.startsWith('/payments') || path.startsWith('/collections') ? 'active' : '' %>">Billing</a>
+    <a href="/cases" class="<%= path.startsWith('/cases') ? 'active' : '' %>">Cases</a>
+    <a href="/tasks" class="<%= path.startsWith('/tasks') ? 'active' : '' %>">Tasks</a>
+    <a href="/reports" class="<%= path.startsWith('/reports') ? 'active' : '' %>">Reports</a>
+  </nav>
+  <form class="search" action="/accounts" method="get"><input type="search" name="q" placeholder="Search accounts…"></form>
+</header>
+<main>
+<% if (flash) { %><div class="flash"><%= flash %></div><% } %>

@@ -1,0 +1,25 @@
+<%- include('../partials/head') %>
+<h1>Renewals</h1>
+<p class="muted">Eligible = accounts with a billable order in the prior edition. Renewed = those with a non-cancelled order in this edition.</p>
+<table>
+  <thead><tr><th>Edition</th><th>Status</th><th>Close</th><th class="num">Eligible</th><th class="num">Renewed</th><th>Rate</th><th class="num">Prior monthly</th><th class="num">Renewed monthly</th></tr></thead>
+  <tbody>
+  <% for (const r of rows) { const rate = r.eligible ? r.renewed / r.eligible : 0; %>
+    <tr><td><a href="/reports/renewals?edition=<%= r.edition_id %>"><%= r.directory_name %> <%= r.edition_year %></a></td><td><%- include('../partials/badge', { value: r.status }) %></td><td><%= r.close_date %></td><td class="num"><%= r.eligible %></td><td class="num"><%= r.renewed %></td>
+    <td style="min-width:140px"><div class="progress"><span style="width:<%= Math.round(rate * 100) %>%"></span></div><span class="muted"><%= Math.round(rate * 100) %>%</span></td>
+    <td class="num"><%= money(r.prior_monthly) %></td><td class="num"><%= money(r.renewed_monthly) %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<% if (editionId) { %>
+<h2>Not yet renewed (<%= notRenewed.length %>)</h2>
+<table>
+  <thead><tr><th>Account</th><th>Phone</th><th>Rep</th><th>Prior order</th><th class="num">Prior monthly</th><th>Pipeline stage</th></tr></thead>
+  <tbody>
+  <% for (const a of notRenewed) { %>
+    <tr><td><a href="/accounts/<%= a.id %>"><%= a.name %></a></td><td><%= a.phone %></td><td><%= a.rep_name %></td><td><%= a.order_number %></td><td class="num"><%= money(a.total_monthly_cents) %></td><td><% if (a.opp_stage) { %><%- include('../partials/badge', { value: a.opp_stage }) %><% } else { %><span class="muted">no opportunity</span><% } %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<% } %>
+<%- include('../partials/foot') %>

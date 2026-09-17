@@ -1,0 +1,12 @@
+<%- include('../partials/head') %>
+<h1>Tasks</h1>
+<table>
+  <thead><tr><th>Due</th><th>Task</th><th>Account</th><th>Owner</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  <% for (const t of tasks) { %>
+    <tr class="<%= t.status === 'open' && t.due_date && t.due_date < today ? 'overdue' : '' %>"><td><%= t.due_date ?? '—' %></td><td><%= t.title %></td><td><% if (t.account_id) { %><a href="/accounts/<%= t.account_id %>"><%= t.account_name %></a><% } %></td><td><%= t.user_name %></td><td><%- include('../partials/badge', { value: t.priority }) %></td><td><%- include('../partials/badge', { value: t.status }) %></td>
+    <td><% if (t.status === 'open') { %><form method="post" action="/tasks/<%= t.id %>/done"><button class="secondary">Done</button></form><% } %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

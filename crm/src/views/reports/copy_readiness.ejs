@@ -1,0 +1,20 @@
+<%- include('../partials/head') %>
+<h1>Copy readiness</h1>
+<table>
+  <thead><tr><th>Edition</th><th>Status</th><th>Close</th><th class="num">Approved</th><th class="num">Proof sent</th><th class="num">Artwork received</th><th class="num">Pending</th></tr></thead>
+  <tbody>
+  <% for (const e of editions) { %>
+    <tr><td><a href="/editions/<%= e.id %>"><%= e.directory_name %> <%= e.edition_year %></a></td><td><%- include('../partials/badge', { value: e.status }) %></td><td class="<%= e.close_date < today ? 'bad' : '' %>"><%= e.close_date %></td><td class="num good"><%= e.approved %></td><td class="num"><%= e.proof_sent %></td><td class="num"><%= e.artwork_received %></td><td class="num <%= e.pending ? 'warn' : '' %>"><%= e.pending %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<h2>Lines needing copy (<%= lines.length %>)</h2>
+<table>
+  <thead><tr><th>Edition</th><th>Close</th><th>Account</th><th>Order</th><th>Product</th><th>Heading</th><th>Copy status</th></tr></thead>
+  <tbody>
+  <% for (const l of lines) { %>
+    <tr><td><%= l.directory_name %> <%= l.edition_year %></td><td><%= l.close_date %></td><td><%= l.account_name %></td><td><a href="/orders/<%= l.order_id %>"><%= l.order_number %></a></td><td><%= l.product_name %></td><td><%= l.heading_name ?? '—' %></td><td><%- include('../partials/badge', { value: l.ad_copy_status }) %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

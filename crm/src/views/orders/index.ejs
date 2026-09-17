@@ -1,0 +1,17 @@
+<%- include('../partials/head') %>
+<div class="toolbar"><h1>Orders <span class="muted">(<%= orders.length %>)</span></h1><a class="btn" href="/orders/new">+ New order</a></div>
+<form class="filters" method="get">
+  <select name="status"><option value="">Any status</option><% for (const s of ['draft','pending_approval','approved','in_production','published','cancelled']) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= titleCase(s) %></option><% } %></select>
+  <select name="edition"><option value="">Any edition</option><% for (const e of editions) { %><option value="<%= e.id %>" <%= String(filters.edition) === String(e.id) ? 'selected' : '' %>><%= e.name %> <%= e.edition_year %> (<%= titleCase(e.status) %>)</option><% } %></select>
+  <select name="rep"><option value="">Any rep</option><% for (const u of reps) { %><option value="<%= u.id %>" <%= String(filters.rep) === String(u.id) ? 'selected' : '' %>><%= u.name %></option><% } %></select>
+  <button>Filter</button> <a href="/orders">Clear</a>
+</form>
+<table>
+  <thead><tr><th>Order</th><th>Account</th><th>Edition</th><th>Type</th><th>Status</th><th>Rep</th><th>Signed</th><th class="num">Monthly</th><th class="num">Contract</th></tr></thead>
+  <tbody>
+  <% for (const o of orders) { %>
+    <tr><td><a href="/orders/<%= o.id %>"><%= o.order_number %></a></td><td><a href="/accounts/<%= o.account_id %>"><%= o.account_name %></a></td><td><%= o.directory_name %> <%= o.edition_year %></td><td><%= titleCase(o.order_type) %></td><td><%- include('../partials/badge', { value: o.status }) %></td><td><%= o.rep_name %></td><td><%= o.signed_at ?? '—' %></td><td class="num"><%= money(o.total_monthly_cents) %></td><td class="num"><%= money(o.total_contract_cents) %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

@@ -1,0 +1,17 @@
+<%- include('../partials/head') %>
+<h1>Products & headings</h1>
+<div class="cols">
+<section>
+  <h2>Product catalogue</h2>
+  <table><thead><tr><th>Code</th><th>Product</th><th>Category</th><th>Size</th><th class="num">Base monthly</th></tr></thead><tbody>
+  <% for (const p of products) { %><tr><td class="muted"><%= p.code %></td><td><%= p.name %></td><td><%- include('../partials/badge', { value: p.category }) %></td><td><%= p.size_desc %></td><td class="num"><%= money(p.base_monthly_cents) %></td></tr><% } %>
+  </tbody></table>
+</section>
+<section>
+  <h2>Headings</h2>
+  <table><thead><tr><th>Code</th><th>Heading</th><th class="num">Ad lines</th></tr></thead><tbody>
+  <% for (const h of headings) { %><tr><td class="muted"><%= h.code %></td><td><%= h.name %></td><td class="num"><%= h.line_count %></td></tr><% } %>
+  </tbody></table>
+</section>
+</div>
+<%- include('../partials/foot') %>

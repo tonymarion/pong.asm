@@ -1,0 +1,53 @@
+<%- include('../partials/head') %>
+<div class="toolbar">
+  <div><h1><%= order.order_number %> <%- include('../partials/badge', { value: order.status }) %></h1>
+  <span class="muted"><a href="/accounts/<%= order.account_id %>"><%= order.account_name %></a> · <a href="/editions/<%= order.edition_id %>"><%= order.directory_name %> <%= order.edition_year %></a> (<%= titleCase(order.edition_status) %>) · <%= titleCase(order.order_type) %> · Rep <%= order.rep_name ?? '—' %></span></div>
+  <div>
+    <% for (const t of transitions) { %>
+      <form class="inline" method="post" action="/orders/<%= order.id %>/status" style="display:inline"><input type="hidden" name="status" value="<%= t %>"><button class="<%= t === 'cancelled' ? 'danger' : t === 'approved' || t === 'published' ? '' : 'secondary' %>"><%= t === 'pending_approval' ? 'Submit for approval' : t === 'approved' ? 'Approve' : t === 'in_production' ? 'Send to production' : t === 'published' ? 'Mark published' : t === 'draft' ? 'Back to draft' : 'Cancel order' %></button></form>
+    <% } %>
+  </div>
+</div>
+<div class="cols">
+<section>
+  <div class="card">
+    <dl class="props">
+      <dt>Signed</dt><dd><%= order.signed_at ?? '—' %><% if (order.signer_first) { %> by <%= order.signer_first %> <%= order.signer_last %><% } %></dd>
+      <dt>Billing</dt><dd><%= order.billing_frequency === 'annual' ? 'Annual prepay' : `${order.months} monthly installments` %> from publish date <%= order.publish_date %> · terms <%= titleCase(order.payment_terms) %></dd>
+      <dt>Close date</dt><dd class="<%= order.close_date < today && order.status !== 'published' ? 'warn' : '' %>"><%= order.close_date %></dd>
+      <dt>Monthly</dt><dd><strong><%= money(order.total_monthly_cents) %></strong></dd>
+      <dt>Contract value</dt><dd><strong><%= money(order.total_contract_cents) %></strong></dd>
+      <dt>Notes</dt><dd><%= order.notes ?? '—' %></dd>
+    </dl>
+  </div>
+  <h2>Lines</h2>
+  <table>
+    <thead><tr><th>Product</th><th>Heading</th><th>Location</th><th>Listing text</th><th class="num">Monthly</th><th>Ad copy</th></tr></thead>
+    <tbody>
+    <% for (const l of lines) { %>
+      <tr><td><%= l.product_name %> <span class="muted"><%= l.code %></span></td><td><%= l.heading_name ?? '—' %></td><td><%= l.location_name ?? '—' %> <span class="muted"><%= l.location_phone ?? '' %></span></td><td><%= l.listing_text ?? '' %></td><td class="num"><%= money(l.qty * l.monthly_rate_cents) %></td>
+      <td><form class="inline" method="post" action="/orders/<%= order.id %>/lines/<%= l.id %>/copy"><select name="ad_copy_status"><% for (const s of ['pending','artwork_received','proof_sent','approved']) { %><option value="<%= s %>" <%= l.ad_copy_status === s ? 'selected' : '' %>><%= titleCase(s) %></option><% } %></select><button class="secondary">Set</button></form></td></tr>
+    <% } %>
+    </tbody>
+  </table>
+</section>
+<section>
+  <h2>Installment schedule</h2>
+  <% if (!invoices.length) { %>
+    <p class="muted">No invoices yet.
+    <% if (['approved','in_production','published'].includes(order.status)) { %>
+      <form method="post" action="/orders/<%= order.id %>/invoices" style="display:inline"><button>Generate <%= order.billing_frequency === 'annual' ? 'annual invoice' : order.months + ' installments' %></button></form>
+    <% } else { %>Approve the order to schedule billing.<% } %></p>
+  <% } else { %>
+  <table>
+    <thead><tr><th>#</th><th>Invoice</th><th>Issued</th><th>Due</th><th>Status</th><th class="num">Total</th><th class="num">Balance</th></tr></thead>
+    <tbody>
+    <% for (const i of invoices) { %>
+      <tr class="<%= i.status !== 'paid' && i.status !== 'void' && i.due_date < today && i.total_cents > i.paid_cents ? 'overdue' : '' %>"><td><%= i.installment_no %></td><td><a href="/invoices/<%= i.id %>"><%= i.invoice_number %></a></td><td class="<%= i.issue_date > today ? 'muted' : '' %>"><%= i.issue_date %></td><td><%= i.due_date %></td><td><%- include('../partials/badge', { value: i.status }) %></td><td class="num"><%= money(i.total_cents) %></td><td class="num"><%= money(i.total_cents - i.paid_cents) %></td></tr>
+    <% } %>
+    </tbody>
+  </table>
+  <% } %>
+</section>
+</div>
+<%- include('../partials/foot') %>

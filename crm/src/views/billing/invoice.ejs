@@ -1,0 +1,64 @@
+<%- include('../partials/head') %>
+<% const balance = invoice.total_cents - invoice.paid_cents; %>
+<div class="toolbar">
+  <div><h1><%= invoice.invoice_number %> <%- include('../partials/badge', { value: invoice.status }) %></h1>
+  <span class="muted"><a href="/accounts/<%= invoice.account_id %>"><%= invoice.account_name %></a> (<%= invoice.account_number %>) · <% if (invoice.order_number) { %><a href="/orders/<%= invoice.order_id %>"><%= invoice.order_number %></a> · <% } %><%= invoice.directory_name ?? '' %> <%= invoice.edition_year ?? '' %> · installment <%= invoice.installment_no ?? '—' %></span></div>
+  <% if (invoice.paid_cents === 0 && invoice.status !== 'void') { %><form method="post" action="/invoices/<%= invoice.id %>/void"><button class="danger">Void</button></form><% } %>
+</div>
+<div class="cols">
+<section>
+  <div class="card">
+    <dl class="props">
+      <dt>Issued</dt><dd><%= invoice.issue_date %></dd>
+      <dt>Due</dt><dd><%= invoice.due_date %> <% if (balance > 0 && daysPastDue > 0) { %><span class="bad"><%= daysPastDue %> days past due</span><% } %></dd>
+      <dt>Period</dt><dd><%= invoice.period_start %> → <%= invoice.period_end %></dd>
+      <dt>Terms</dt><dd><%= titleCase(invoice.payment_terms) %></dd>
+      <dt>Total</dt><dd><%= money(invoice.total_cents) %></dd>
+      <dt>Settled</dt><dd><%= money(invoice.paid_cents) %> <span class="muted">(payments + credits)</span></dd>
+      <dt>Balance</dt><dd><strong class="<%= balance > 0 ? 'warn' : 'good' %>"><%= money(balance) %></strong></dd>
+    </dl>
+  </div>
+  <h2>Lines</h2>
+  <table><thead><tr><th>Description</th><th class="num">Amount</th></tr></thead><tbody>
+  <% for (const l of lines) { %><tr><td><%= l.description %></td><td class="num"><%= money(l.amount_cents) %></td></tr><% } %>
+  </tbody></table>
+  <h2>Payments</h2>
+  <table><thead><tr><th>Date</th><th>Method</th><th>Reference</th><th class="num">Amount</th></tr></thead><tbody>
+  <% for (const p of payments) { %><tr><td><%= p.payment_date %></td><td><%= titleCase(p.method) %></td><td><%= p.reference ?? '' %> <span class="muted"><%= p.notes ?? '' %></span></td><td class="num"><%= money(p.amount_cents) %></td></tr><% } %>
+  <% if (!payments.length) { %><tr><td colspan="4" class="muted">No payments.</td></tr><% } %>
+  </tbody></table>
+  <h2>Adjustments</h2>
+  <table><thead><tr><th>Date</th><th>Reason</th><th>Approved by</th><th class="num">Amount</th></tr></thead><tbody>
+  <% for (const a of adjustments) { %><tr><td><%= a.adj_date %></td><td><%= titleCase(a.reason) %> <span class="muted"><%= a.notes ?? '' %></span></td><td><%= a.approver ?? '' %></td><td class="num <%= a.amount_cents < 0 ? 'good' : '' %>"><%= money(a.amount_cents) %></td></tr><% } %>
+  <% if (!adjustments.length) { %><tr><td colspan="4" class="muted">No adjustments.</td></tr><% } %>
+  </tbody></table>
+</section>
+<section>
+  <% if (invoice.status !== 'void') { %>
+  <h2>Record payment</h2>
+  <form class="stack card" method="post" action="/invoices/<%= invoice.id %>/payments">
+    <div class="grid-3">
+      <label>Amount <input name="amount" type="number" step="0.01" min="0.01" value="<%= (Math.max(balance, 0) / 100).toFixed(2) %>" required></label>
+      <label>Date <input name="payment_date" type="date" value="<%= today %>"></label>
+      <label>Method <select name="method"><option value="check">Check</option><option value="ach">ACH</option><option value="card">Card</option><option value="cash">Cash</option></select></label>
+      <label>Reference <input name="reference" placeholder="Check # / txn id"></label>
+      <label>Notes <input name="notes"></label>
+    </div>
+    <div><button>Apply payment</button></div>
+  </form>
+  <h2>Adjustment</h2>
+  <form class="stack card" method="post" action="/invoices/<%= invoice.id %>/adjustments">
+    <div class="grid-3">
+      <label>Direction <select name="direction"><option value="credit">Credit (reduce what is owed)</option><option value="debit">Debit (add a charge)</option></select></label>
+      <label>Amount <input name="amount" type="number" step="0.01" min="0.01" required></label>
+      <label>Reason <select name="reason"><option value="ad_error">Ad error</option><option value="goodwill">Goodwill</option><option value="cancellation">Cancellation</option><option value="write_off">Write-off</option><option value="late_fee">Late fee</option><option value="other">Other</option></select></label>
+      <label>Date <input name="adj_date" type="date" value="<%= today %>"></label>
+      <label>Approved by <select name="approved_by_user_id"><option value="">—</option><% for (const u of users) { %><option value="<%= u.id %>"><%= u.name %></option><% } %></select></label>
+      <label>Notes <input name="notes"></label>
+    </div>
+    <div><button class="secondary">Record adjustment</button></div>
+  </form>
+  <% } %>
+</section>
+</div>
+<%- include('../partials/foot') %>

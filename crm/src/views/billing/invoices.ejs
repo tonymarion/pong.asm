@@ -1,0 +1,17 @@
+<%- include('../partials/head') %>
+<div class="toolbar"><h1>Invoices <span class="muted">(<%= invoices.length %>)</span></h1><div><a class="btn secondary" href="/payments">Payments</a> <a class="btn secondary" href="/collections">Collections queue</a> <a class="btn secondary" href="/reports/aging">Aging</a></div></div>
+<form class="filters" method="get">
+  <input type="search" name="q" value="<%= filters.q %>" placeholder="Account or invoice #">
+  <select name="status"><option value="">Any status</option><% for (const s of ['open','partial','paid','credited','void']) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= titleCase(s) %></option><% } %></select>
+  <label><input type="checkbox" name="overdue" value="1" <%= filters.overdue ? 'checked' : '' %>> Overdue only</label>
+  <button>Filter</button> <a href="/invoices">Clear</a>
+</form>
+<table>
+  <thead><tr><th>Invoice</th><th>Account</th><th>Issued</th><th>Due</th><th>Status</th><th class="num">Total</th><th class="num">Paid</th><th class="num">Balance</th></tr></thead>
+  <tbody>
+  <% for (const i of invoices) { %>
+    <tr class="<%= i.balance_cents > 0 && i.due_date < today && i.status !== 'void' ? 'overdue' : '' %>"><td><a href="/invoices/<%= i.id %>"><%= i.invoice_number %></a></td><td><a href="/accounts/<%= i.account_id %>"><%= i.account_name %></a></td><td><%= i.issue_date %></td><td><%= i.due_date %></td><td><%- include('../partials/badge', { value: i.status }) %></td><td class="num"><%= money(i.total_cents) %></td><td class="num"><%= money(i.paid_cents) %></td><td class="num"><%= money(i.balance_cents) %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

@@ -1,0 +1,11 @@
+<%- include('../partials/head') %>
+<div class="toolbar"><h1>Directories</h1><a class="btn secondary" href="/products">Products & headings</a></div>
+<table>
+  <thead><tr><th>Code</th><th>Directory</th><th>Market</th><th>Region</th><th class="num">Distribution</th><th class="num">Current edition</th><th class="num">Advertisers</th><th class="num">Monthly billing</th></tr></thead>
+  <tbody>
+  <% for (const d of directories) { %>
+    <tr><td class="muted"><%= d.code %></td><td><a href="/directories/<%= d.id %>"><%= d.name %></a></td><td><%= d.market %>, <%= d.state %></td><td><%= d.region %></td><td class="num"><%= d.distribution_qty.toLocaleString() %></td><td class="num"><%= d.current_year ?? '—' %></td><td class="num"><%= d.advertisers %></td><td class="num"><%= money(d.monthly_cents) %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

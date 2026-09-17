@@ -1,0 +1,64 @@
+<%- include('partials/head') %>
+<h1>Dashboard</h1>
+<div class="kpis">
+  <a class="kpi" href="/accounts?status=active"><span class="kpi-label">Active advertisers</span><span class="kpi-value"><%= kpis.activeAccounts %></span></a>
+  <a class="kpi" href="/accounts?status=prospect"><span class="kpi-label">Prospects</span><span class="kpi-value"><%= kpis.prospects %></span></a>
+  <a class="kpi" href="/orders"><span class="kpi-label">Orders in progress</span><span class="kpi-value"><%= kpis.openOrders %></span></a>
+  <a class="kpi" href="/reports/revenue"><span class="kpi-label">Monthly billing (live books)</span><span class="kpi-value"><%= money(kpis.monthlyBilling) %></span></a>
+  <a class="kpi" href="/reports/aging"><span class="kpi-label">AR outstanding</span><span class="kpi-value"><%= money(kpis.arTotal.total) %></span><span class="kpi-sub"><%= money(kpis.arTotal.d61_90 + kpis.arTotal.d91_120 + kpis.arTotal.d120_plus) %> over 60 days</span></a>
+  <a class="kpi" href="/cases"><span class="kpi-label">Open cases</span><span class="kpi-value"><%= kpis.openCases %></span></a>
+  <a class="kpi" href="/tasks"><span class="kpi-label">Tasks due</span><span class="kpi-value"><%= kpis.tasksDue %></span></a>
+</div>
+
+<div class="cols">
+<section>
+  <h2>Editions in flight</h2>
+  <table>
+    <thead><tr><th>Directory</th><th>Year</th><th>Status</th><th>Close date</th><th class="num">Orders</th><th class="num">Lines w/o copy</th></tr></thead>
+    <tbody>
+    <% for (const e of editions) { %>
+      <tr>
+        <td><a href="/editions/<%= e.id %>"><%= e.directory_name %></a></td><td><%= e.edition_year %></td>
+        <td><%- include('partials/badge', { value: e.status }) %></td>
+        <td class="<%= e.close_date < today ? 'muted' : '' %>"><%= e.close_date %></td>
+        <td class="num"><%= e.order_count %></td>
+        <td class="num <%= e.lines_pending_copy ? 'warn' : '' %>"><%= e.lines_pending_copy %></td>
+      </tr>
+    <% } %>
+    <% if (!editions.length) { %><tr><td colspan="6" class="muted">No editions in canvass or production.</td></tr><% } %>
+    </tbody>
+  </table>
+
+  <h2>Renewal pipeline (editions in canvass)</h2>
+  <table>
+    <thead><tr><th>Stage</th><th class="num">Opportunities</th><th class="num">Est. monthly</th></tr></thead>
+    <tbody>
+    <% for (const p of pipeline) { %>
+      <tr><td><%- include('partials/badge', { value: p.stage }) %></td><td class="num"><%= p.c %></td><td class="num"><%= money(p.m) %></td></tr>
+    <% } %>
+    </tbody>
+  </table>
+  <p><a href="/opportunities">Open pipeline board →</a></p>
+</section>
+
+<section>
+  <h2>Tasks due this week</h2>
+  <table>
+    <thead><tr><th>Due</th><th>Task</th><th>Account</th><th>Owner</th></tr></thead>
+    <tbody>
+    <% for (const t of tasks) { %>
+      <tr class="<%= t.due_date < today ? 'overdue' : '' %>"><td><%= t.due_date %></td><td><%= t.title %></td><td><a href="/accounts/<%= t.account_id %>"><%= t.account_name %></a></td><td><%= t.user_name %></td></tr>
+    <% } %>
+    <% if (!tasks.length) { %><tr><td colspan="4" class="muted">Nothing due.</td></tr><% } %>
+    </tbody>
+  </table>
+
+  <h2>Recent activity</h2>
+  <ul class="timeline">
+  <% for (const a of activities) { %>
+    <li><span class="when"><%= a.occurred_at.slice(0, 16) %></span> <%- include('partials/badge', { value: a.type }) %> <a href="/accounts/<%= a.account_id %>"><%= a.account_name %></a> — <%= a.subject %> <span class="muted">(<%= a.user_name %>)</span></li>
+  <% } %>
+  </ul>
+</section>
+</div>
+<%- include('partials/foot') %>

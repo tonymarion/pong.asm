@@ -1,0 +1,149 @@
+<%- include('../partials/head') %>
+<div class="toolbar">
+  <div>
+    <h1 style="margin-bottom:2px"><%= account.name %> <%- include('../partials/badge', { value: account.status }) %><% if (account.credit_hold) { %> <span class="badge badge-collections">Credit hold</span><% } %></h1>
+    <span class="muted"><%= account.account_number %> · <%= account.industry %> · <%= account.billing_city %>, <%= account.billing_state %> · Rep: <%= account.rep_name ?? '—' %> · <%= account.territory_name ?? '' %></span>
+  </div>
+  <div>
+    <a class="btn" href="/orders/new?account=<%= account.id %>">+ Order</a>
+    <a class="btn secondary" href="/cases/new?account=<%= account.id %>">+ Case</a>
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi"><span class="kpi-label">Open balance</span><span class="kpi-value <%= balance > 0 ? 'warn' : '' %>"><%= money(balance) %></span><span class="kpi-sub"><%= openInvoices.filter(i => i.overdue).length %> overdue invoice(s)</span></div>
+  <div class="kpi"><span class="kpi-label">Active monthly</span><span class="kpi-value"><%= money(orders.filter(o => o.status === 'published').reduce((s, o) => s + o.total_monthly_cents, 0)) %></span></div>
+  <div class="kpi"><span class="kpi-label">Orders</span><span class="kpi-value"><%= orders.length %></span></div>
+  <div class="kpi"><span class="kpi-label">Open cases</span><span class="kpi-value"><%= cases.filter(c => c.status === 'open' || c.status === 'in_progress').length %></span></div>
+  <div class="kpi"><span class="kpi-label">Terms</span><span class="kpi-value" style="font-size:16px"><%= titleCase(account.payment_terms) %></span><span class="kpi-sub muted">Customer since <%= account.created_at.slice(0,10) %></span></div>
+</div>
+
+<div class="tabs">
+  <a href="#orders">Orders</a><a href="#billing">Billing</a><a href="#contacts">Contacts</a><a href="#activities">Activity</a><a href="#tasks">Tasks</a><a href="#cases">Cases</a><a href="#pipeline">Pipeline</a>
+</div>
+
+<div class="cols">
+<section>
+  <div class="card">
+    <h3>Details</h3>
+    <dl class="props">
+      <dt>Phone</dt><dd><%= account.phone ?? '—' %></dd>
+      <dt>Website</dt><dd><%= account.website ?? '—' %></dd>
+      <dt>Billing address</dt><dd><%= [account.billing_street, account.billing_city, [account.billing_state, account.billing_zip].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—' %></dd>
+      <dt>Locations</dt><dd><% for (const l of locations) { %><div><%= l.name %>: <%= [l.street, l.city].filter(Boolean).join(', ') || '—' %><%= l.phone ? ' · ' + l.phone : '' %></div><% } %></dd>
+      <dt>Notes</dt><dd><%= account.notes ?? '—' %></dd>
+    </dl>
+    <form class="inline" method="post" action="/accounts/<%= account.id %>/status" style="margin-top:10px">
+      <select name="status"><% for (const s of ['prospect','active','inactive','collections']) { %><option value="<%= s %>" <%= account.status === s ? 'selected' : '' %>><%= titleCase(s) %></option><% } %></select>
+      <label><input type="checkbox" name="credit_hold" value="1" <%= account.credit_hold ? 'checked' : '' %>> Credit hold</label>
+      <button class="secondary">Update</button>
+    </form>
+  </div>
+
+  <h2 id="orders">Orders</h2>
+  <table>
+    <thead><tr><th>Order</th><th>Edition</th><th>Type</th><th>Status</th><th class="num">Monthly</th><th class="num">Contract</th></tr></thead>
+    <tbody>
+    <% for (const o of orders) { %>
+      <tr><td><a href="/orders/<%= o.id %>"><%= o.order_number %></a></td><td><%= o.directory_name %> <%= o.edition_year %></td><td><%= titleCase(o.order_type) %></td><td><%- include('../partials/badge', { value: o.status }) %></td><td class="num"><%= money(o.total_monthly_cents) %></td><td class="num"><%= money(o.total_contract_cents) %></td></tr>
+    <% } %>
+    <% if (!orders.length) { %><tr><td colspan="6" class="muted">No orders yet.</td></tr><% } %>
+    </tbody>
+  </table>
+
+  <h2 id="billing">Open invoices</h2>
+  <table>
+    <thead><tr><th>Invoice</th><th>Issued</th><th>Due</th><th>Status</th><th class="num">Total</th><th class="num">Balance</th><th class="num">Days past due</th></tr></thead>
+    <tbody>
+    <% for (const i of openInvoices) { %>
+      <tr class="<%= i.overdue ? 'overdue' : '' %>"><td><a href="/invoices/<%= i.id %>"><%= i.invoice_number %></a></td><td><%= i.issue_date %></td><td><%= i.due_date %></td><td><%- include('../partials/badge', { value: i.status }) %></td><td class="num"><%= money(i.total_cents) %></td><td class="num"><%= money(i.balance_cents) %></td><td class="num <%= i.days_past_due > 60 ? 'bad' : i.overdue ? 'warn' : '' %>"><%= i.overdue ? i.days_past_due : '—' %></td></tr>
+    <% } %>
+    <% if (!openInvoices.length) { %><tr><td colspan="7" class="muted">Nothing outstanding.</td></tr><% } %>
+    </tbody>
+  </table>
+  <details><summary>Recent payments (<%= payments.length %>) and adjustments (<%= adjustments.length %>)</summary>
+    <table><thead><tr><th>Date</th><th>Invoice</th><th>Method</th><th>Ref</th><th class="num">Amount</th></tr></thead><tbody>
+    <% for (const p of payments) { %><tr><td><%= p.payment_date %></td><td><%= p.invoice_number ?? 'unapplied' %></td><td><%= titleCase(p.method) %></td><td><%= p.reference %></td><td class="num"><%= money(p.amount_cents) %></td></tr><% } %>
+    </tbody></table>
+    <table><thead><tr><th>Date</th><th>Invoice</th><th>Reason</th><th>Approved by</th><th class="num">Amount</th></tr></thead><tbody>
+    <% for (const a of adjustments) { %><tr><td><%= a.adj_date %></td><td><%= a.invoice_number ?? '—' %></td><td><%= titleCase(a.reason) %> <span class="muted"><%= a.notes ?? '' %></span></td><td><%= a.approver ?? '' %></td><td class="num <%= a.amount_cents < 0 ? 'good' : '' %>"><%= money(a.amount_cents) %></td></tr><% } %>
+    </tbody></table>
+  </details>
+
+  <h2 id="contacts">Contacts</h2>
+  <table>
+    <thead><tr><th>Name</th><th>Title</th><th>Email</th><th>Phone</th><th>Flags</th></tr></thead>
+    <tbody>
+    <% for (const c of contacts) { %>
+      <tr><td><%= c.first_name %> <%= c.last_name %></td><td><%= c.title %></td><td><%= c.email %></td><td><%= c.phone %></td><td><% if (c.is_primary) { %><span class="badge">Primary</span><% } %> <% if (c.is_authorized_signer) { %><span class="badge">Signer</span><% } %></td></tr>
+    <% } %>
+    </tbody>
+  </table>
+  <details><summary>Add contact</summary>
+    <form class="stack card" method="post" action="/accounts/<%= account.id %>/contacts">
+      <div class="grid-3"><label>First <input name="first_name" required></label><label>Last <input name="last_name" required></label><label>Title <input name="title"></label><label>Email <input name="email"></label><label>Phone <input name="phone"></label>
+      <label>&nbsp;<span><label><input type="checkbox" name="is_primary" value="1"> Primary</label> <label><input type="checkbox" name="is_authorized_signer" value="1"> Signer</label></span></label></div>
+      <div><button>Add contact</button></div>
+    </form>
+  </details>
+</section>
+
+<section>
+  <h2 id="activities">Activity</h2>
+  <form class="stack card" method="post" action="/accounts/<%= account.id %>/activities">
+    <div class="grid-3">
+      <label>Type <select name="type"><% for (const t of ['call','email','meeting','note','proof','collections']) { %><option value="<%= t %>"><%= titleCase(t) %></option><% } %></select></label>
+      <label>Contact <select name="contact_id"><option value="">—</option><% for (const c of contacts) { %><option value="<%= c.id %>"><%= c.first_name %> <%= c.last_name %></option><% } %></select></label>
+      <label>By <select name="user_id"><% for (const u of users) { %><option value="<%= u.id %>" <%= u.id === account.owner_user_id ? 'selected' : '' %>><%= u.name %></option><% } %></select></label>
+    </div>
+    <label>Subject <input name="subject" required placeholder="e.g. Renewal call - agreed to keep half page"></label>
+    <label>Notes <textarea name="body" rows="2"></textarea></label>
+    <div><button>Log activity</button></div>
+  </form>
+  <ul class="timeline">
+  <% for (const a of activities) { %>
+    <li><span class="when"><%= a.occurred_at.slice(0, 16) %></span> <%- include('../partials/badge', { value: a.type }) %> <strong><%= a.subject %></strong><% if (a.body) { %><div class="muted"><%= a.body %></div><% } %> <span class="muted">— <%= a.user_name ?? '' %><%= a.first_name ? ' with ' + a.first_name + ' ' + a.last_name : '' %></span></li>
+  <% } %>
+  </ul>
+
+  <h2 id="tasks">Tasks</h2>
+  <table>
+    <thead><tr><th>Due</th><th>Task</th><th>Owner</th><th>Priority</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    <% for (const t of tasks) { %>
+      <tr class="<%= t.status === 'open' && t.due_date && t.due_date < today ? 'overdue' : '' %>"><td><%= t.due_date ?? '—' %></td><td><%= t.title %></td><td><%= t.user_name %></td><td><%- include('../partials/badge', { value: t.priority }) %></td><td><%- include('../partials/badge', { value: t.status }) %></td>
+      <td><% if (t.status === 'open') { %><form method="post" action="/tasks/<%= t.id %>/done"><button class="secondary">Done</button></form><% } %></td></tr>
+    <% } %>
+    </tbody>
+  </table>
+  <form class="inline card" method="post" action="/accounts/<%= account.id %>/tasks">
+    <input name="title" required placeholder="New task"><input type="date" name="due_date" value="<%= today %>">
+    <select name="assigned_user_id"><% for (const u of users) { %><option value="<%= u.id %>" <%= u.id === account.owner_user_id ? 'selected' : '' %>><%= u.name %></option><% } %></select>
+    <select name="priority"><option value="normal">Normal</option><option value="high">High</option><option value="low">Low</option></select>
+    <button>Add task</button>
+  </form>
+
+  <h2 id="cases">Cases</h2>
+  <table>
+    <thead><tr><th>Case</th><th>Type</th><th>Subject</th><th>Opened</th><th>Status</th></tr></thead>
+    <tbody>
+    <% for (const c of cases) { %>
+      <tr><td><a href="/cases/<%= c.id %>"><%= c.case_number %></a></td><td><%= titleCase(c.type) %></td><td><%= c.subject %></td><td><%= c.opened_at.slice(0,10) %></td><td><%- include('../partials/badge', { value: c.status }) %></td></tr>
+    <% } %>
+    <% if (!cases.length) { %><tr><td colspan="5" class="muted">No cases.</td></tr><% } %>
+    </tbody>
+  </table>
+
+  <h2 id="pipeline">Opportunities</h2>
+  <table>
+    <thead><tr><th>Edition</th><th>Source</th><th>Stage</th><th class="num">Est. monthly</th><th>Expected close</th></tr></thead>
+    <tbody>
+    <% for (const o of opportunities) { %>
+      <tr><td><%= o.directory_name %> <%= o.edition_year %></td><td><%= titleCase(o.source) %></td><td><%- include('../partials/badge', { value: o.stage }) %></td><td class="num"><%= money(o.est_monthly_cents) %></td><td><%= o.expected_close %></td></tr>
+    <% } %>
+    <% if (!opportunities.length) { %><tr><td colspan="5" class="muted">No open opportunities.</td></tr><% } %>
+    </tbody>
+  </table>
+</section>
+</div>
+<%- include('../partials/foot') %>

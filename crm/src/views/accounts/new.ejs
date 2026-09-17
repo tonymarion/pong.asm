@@ -1,0 +1,29 @@
+<%- include('../partials/head') %>
+<h1>New account</h1>
+<form class="stack card" method="post" action="/accounts">
+  <div class="grid-3">
+    <label>Business name <input name="name" required></label>
+    <label>DBA <input name="dba"></label>
+    <label>Status <select name="status"><option value="prospect">Prospect</option><option value="active">Active</option></select></label>
+    <label>Primary heading <input name="industry" list="headings"><datalist id="headings"><% for (const h of headings) { %><option value="<%= h.name %>"><% } %></datalist></label>
+    <label>Phone <input name="phone"></label>
+    <label>Website <input name="website"></label>
+    <label>Street <input name="billing_street"></label>
+    <label>City <input name="billing_city"></label>
+    <label>State / ZIP <span class="grid-2"><input name="billing_state" maxlength="2"><input name="billing_zip"></span></label>
+    <label>Payment terms <select name="payment_terms"><option value="net30">Net 30</option><option value="net15">Net 15</option><option value="net45">Net 45</option><option value="due_on_receipt">Due on receipt</option></select></label>
+    <label>Territory <select name="territory_id"><option value="">—</option><% for (const t of territories) { %><option value="<%= t.id %>"><%= t.name %></option><% } %></select></label>
+    <label>Sales rep <select name="owner_user_id"><option value="">—</option><% for (const u of reps) { %><option value="<%= u.id %>"><%= u.name %></option><% } %></select></label>
+  </div>
+  <h3>Primary contact</h3>
+  <div class="grid-3">
+    <label>First name <input name="contact_first_name"></label>
+    <label>Last name <input name="contact_last_name"></label>
+    <label>Title <input name="contact_title"></label>
+    <label>Email <input name="contact_email" type="email"></label>
+    <label>Phone <input name="contact_phone"></label>
+  </div>
+  <label>Notes <textarea name="notes" rows="2"></textarea></label>
+  <div><button>Create account</button> <a class="btn secondary" href="/accounts">Cancel</a></div>
+</form>
+<%- include('../partials/foot') %>

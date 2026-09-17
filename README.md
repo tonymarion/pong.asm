@@ -33,3 +33,9 @@ Code is well documented to help people like me who are just starting out with as
 ## License
 
 MIT
+
+## Yellow Pages CRM
+
+This repository also hosts a CRM for a yellow pages directory publisher under
+[`crm/`](crm/). See [`crm/README.md`](crm/README.md) to run it and
+[`crm/docs/PLAN.md`](crm/docs/PLAN.md) for the functional plan.

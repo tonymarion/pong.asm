@@ -1,0 +1,13 @@
+<%- include('../partials/head') %>
+<div class="toolbar"><h1>AR aging</h1><form class="filters" method="get"><label>As of <input type="date" name="as_of" value="<%= asOf %>"></label><button class="secondary">Run</button></form></div>
+<% const labels = { current: 'Current', d1_30: '1–30', d31_60: '31–60', d61_90: '61–90', d91_120: '91–120', d120_plus: '120+' }; %>
+<table>
+  <thead><tr><th>Account</th><% for (const b of buckets) { %><th class="num"><%= labels[b] %></th><% } %><th class="num">Total</th></tr></thead>
+  <tbody>
+  <tr class="total"><td>All accounts (<%= rows.length %>)</td><% for (const b of buckets) { %><td class="num"><%= money(totals[b]) %></td><% } %><td class="num"><%= money(totals.total) %></td></tr>
+  <% for (const r of rows) { %>
+    <tr><td><a href="/accounts/<%= r.account_id %>"><%= r.account_name %></a> <span class="muted"><%= r.account_number %></span></td><% for (const b of buckets) { %><td class="num <%= r[b] && (b === 'd91_120' || b === 'd120_plus') ? 'bad' : r[b] && b !== 'current' ? 'warn' : '' %>"><%= r[b] ? money(r[b]) : '' %></td><% } %><td class="num"><%= money(r.total) %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

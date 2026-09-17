@@ -1,0 +1,13 @@
+<%- include('../partials/head') %>
+<h1><%= directory.name %> <span class="muted">(<%= directory.code %>)</span></h1>
+<p class="muted"><%= directory.market %>, <%= directory.state %> · <%= directory.region %> · distribution <%= directory.distribution_qty.toLocaleString() %></p>
+<h2>Editions</h2>
+<table>
+  <thead><tr><th>Year</th><th>Status</th><th>Canvass starts</th><th>Close</th><th>Publish</th><th>Expires</th><th class="num">Orders</th><th class="num">Monthly billing</th></tr></thead>
+  <tbody>
+  <% for (const e of editions) { %>
+    <tr><td><a href="/editions/<%= e.id %>"><%= e.edition_year %></a></td><td><%- include('../partials/badge', { value: e.status }) %></td><td><%= e.canvass_start %></td><td><%= e.close_date %></td><td><%= e.publish_date %></td><td><%= e.expires_date %></td><td class="num"><%= e.order_count %></td><td class="num"><%= money(e.monthly_cents) %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

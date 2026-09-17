@@ -1,0 +1,30 @@
+<%- include('../partials/head') %>
+<h1><%= c.case_number %> <%- include('../partials/badge', { value: c.status }) %> <%- include('../partials/badge', { value: c.priority }) %></h1>
+<div class="cols">
+<section class="card">
+  <dl class="props">
+    <dt>Account</dt><dd><a href="/accounts/<%= c.account_id %>"><%= c.account_name %></a></dd>
+    <dt>Type</dt><dd><%= titleCase(c.type) %></dd>
+    <dt>Subject</dt><dd><strong><%= c.subject %></strong></dd>
+    <dt>Description</dt><dd><%= c.description ?? '—' %></dd>
+    <dt>Related</dt><dd><% if (c.order_id) { %><a href="/orders/<%= c.order_id %>">Order line: <%= c.product_name %></a><% } %> <% if (c.invoice_id) { %>· <a href="/invoices/<%= c.invoice_id %>"><%= c.invoice_number %></a><% } %><% if (!c.order_id && !c.invoice_id) { %>—<% } %></dd>
+    <dt>Owner</dt><dd><%= c.owner_name ?? '—' %></dd>
+    <dt>Opened</dt><dd><%= c.opened_at %></dd>
+    <dt>Resolved</dt><dd><%= c.resolved_at ?? '—' %></dd>
+    <dt>Resolution</dt><dd><%= c.resolution ?? '—' %></dd>
+  </dl>
+</section>
+<section>
+  <h2>Update</h2>
+  <form class="stack card" method="post" action="/cases/<%= c.id %>/status">
+    <div class="grid-2">
+      <label>Status <select name="status"><% for (const s of ['open','in_progress','resolved','closed']) { %><option value="<%= s %>" <%= c.status === s ? 'selected' : '' %>><%= titleCase(s) %></option><% } %></select></label>
+      <label>Owner <select name="owner_user_id"><option value="">keep</option><% for (const u of users) { %><option value="<%= u.id %>"><%= u.name %></option><% } %></select></label>
+    </div>
+    <label>Resolution <textarea name="resolution" rows="3"><%= c.resolution ?? '' %></textarea></label>
+    <div><button>Save</button></div>
+  </form>
+  <% if (c.type === 'ad_error' && c.invoice_id) { %><p class="muted">Ad-error credits are recorded on the <a href="/invoices/<%= c.invoice_id %>">related invoice</a>.</p><% } %>
+</section>
+</div>
+<%- include('../partials/foot') %>

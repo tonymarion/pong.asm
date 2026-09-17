@@ -1,0 +1,23 @@
+<%- include('../partials/head') %>
+<h1>New order<% if (account) { %> for <%= account.name %><% } %></h1>
+<form class="stack card" method="post" action="/orders">
+  <div class="grid-3">
+    <label>Account <select name="account_id" required><option value="">—</option><% for (const a of accounts) { %><option value="<%= a.id %>" <%= account && a.id === account.id ? 'selected' : '' %>><%= a.name %> (<%= a.account_number %>)</option><% } %></select></label>
+    <label>Edition <select name="edition_id" required><option value="">—</option><% for (const e of editions) { %><option value="<%= e.id %>"><%= e.name %> <%= e.edition_year %> (<%= titleCase(e.status) %>)</option><% } %></select></label>
+    <label>Rep <select name="rep_user_id"><option value="">Account owner</option><% for (const u of reps) { %><option value="<%= u.id %>"><%= u.name %></option><% } %></select></label>
+    <label>Order type <select name="order_type"><option value="new">New</option><option value="renewal">Renewal</option><option value="upsell">Upsell</option></select></label>
+    <label>Billing <select name="billing_frequency"><option value="monthly">Monthly installments</option><option value="annual">Annual prepay</option></select></label>
+    <label>Months <input name="months" type="number" value="12" min="1" max="24"></label>
+  </div>
+  <h3>Lines <span class="muted">(rate is taken from the edition rate card when the order is saved)</span></h3>
+  <% for (let i = 0; i < 5; i++) { %>
+  <div class="line-rows">
+    <select name="product_id"><option value="">— product —</option><% for (const p of products) { %><option value="<%= p.id %>"><%= p.name %> (<%= money(p.base_monthly_cents) %> base)</option><% } %></select>
+    <select name="heading_id"><option value="">— heading —</option><% for (const h of headings) { %><option value="<%= h.id %>"><%= h.name %></option><% } %></select>
+    <span class="muted">line <%= i + 1 %></span>
+  </div>
+  <% } %>
+  <label>Notes <textarea name="notes" rows="2"></textarea></label>
+  <div><button>Create draft order</button> <a class="btn secondary" href="/orders">Cancel</a></div>
+</form>
+<%- include('../partials/foot') %>

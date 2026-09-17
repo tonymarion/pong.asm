@@ -1,0 +1,38 @@
+<%- include('../partials/head') %>
+<div class="toolbar">
+  <div><h1><a href="/directories/<%= edition.directory_id %>"><%= edition.directory_name %></a> <%= edition.edition_year %> <%- include('../partials/badge', { value: edition.status }) %></h1>
+  <span class="muted">Canvass <%= edition.canvass_start %> · Close <%= edition.close_date %> · Publish <%= edition.publish_date %> · Expires <%= edition.expires_date %></span></div>
+  <form class="inline" method="post" action="/editions/<%= edition.id %>/status">
+    <select name="status"><% for (const s of ['planning','canvass','closed','in_production','published','expired']) { %><option value="<%= s %>" <%= edition.status === s ? 'selected' : '' %>><%= titleCase(s) %></option><% } %></select>
+    <button class="secondary">Set status</button>
+  </form>
+</div>
+<div class="cols">
+<section>
+  <h2>Orders by status</h2>
+  <table><thead><tr><th>Status</th><th class="num">Orders</th><th class="num">Monthly</th></tr></thead><tbody>
+  <% for (const s of byStatus) { %><tr><td><%- include('../partials/badge', { value: s.status }) %></td><td class="num"><%= s.c %></td><td class="num"><%= money(s.m) %></td></tr><% } %>
+  </tbody></table>
+  <h2>Pipeline</h2>
+  <table><thead><tr><th>Stage</th><th class="num">Opps</th><th class="num">Est. monthly</th></tr></thead><tbody>
+  <% for (const s of opps) { %><tr><td><%- include('../partials/badge', { value: s.stage }) %></td><td class="num"><%= s.c %></td><td class="num"><%= money(s.m) %></td></tr><% } %>
+  <% if (!opps.length) { %><tr><td colspan="3" class="muted">No opportunities for this edition.</td></tr><% } %>
+  </tbody></table>
+</section>
+<section>
+  <h2>Rate card</h2>
+  <table><thead><tr><th>Code</th><th>Product</th><th>Category</th><th class="num">Monthly</th><th class="num">Base</th></tr></thead><tbody>
+  <% for (const r of rateCard) { %><tr><td class="muted"><%= r.code %></td><td><%= r.name %> <span class="muted"><%= r.size_desc %></span></td><td><%= titleCase(r.category) %></td><td class="num"><%= money(r.monthly_cents) %></td><td class="num muted"><%= money(r.base_monthly_cents) %></td></tr><% } %>
+  </tbody></table>
+</section>
+</div>
+<h2>Orders (<%= orders.length %>)</h2>
+<table>
+  <thead><tr><th>Order</th><th>Account</th><th>Type</th><th>Status</th><th>Rep</th><th class="num">Lines</th><th class="num">Copy pending</th><th class="num">Monthly</th></tr></thead>
+  <tbody>
+  <% for (const o of orders) { %>
+    <tr><td><a href="/orders/<%= o.id %>"><%= o.order_number %></a></td><td><a href="/accounts/<%= o.account_id %>"><%= o.account_name %></a></td><td><%= titleCase(o.order_type) %></td><td><%- include('../partials/badge', { value: o.status }) %></td><td><%= o.rep_name %></td><td class="num"><%= o.line_count %></td><td class="num <%= o.lines_pending ? 'warn' : '' %>"><%= o.lines_pending %></td><td class="num"><%= money(o.total_monthly_cents) %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

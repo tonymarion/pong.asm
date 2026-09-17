@@ -1,0 +1,14 @@
+<%- include('../partials/head') %>
+<h1>New case</h1>
+<form class="stack card" method="post" action="/cases">
+  <div class="grid-3">
+    <label>Account <select name="account_id" required><option value="">—</option><% for (const a of accounts) { %><option value="<%= a.id %>" <%= accountId === a.id ? 'selected' : '' %>><%= a.name %> (<%= a.account_number %>)</option><% } %></select></label>
+    <label>Type <select name="type"><option value="ad_error">Ad error</option><option value="billing_dispute">Billing dispute</option><option value="cancellation_request">Cancellation request</option><option value="copy_change">Copy change</option><option value="other">Other</option></select></label>
+    <label>Priority <select name="priority"><option value="normal">Normal</option><option value="high">High</option><option value="low">Low</option></select></label>
+    <label>Owner <select name="owner_user_id"><option value="">—</option><% for (const u of users) { %><option value="<%= u.id %>" <%= u.role === 'customer_service' ? 'selected' : '' %>><%= u.name %></option><% } %></select></label>
+  </div>
+  <label>Subject <input name="subject" required></label>
+  <label>Description <textarea name="description" rows="3"></textarea></label>
+  <div><button>Open case</button></div>
+</form>
+<%- include('../partials/foot') %>

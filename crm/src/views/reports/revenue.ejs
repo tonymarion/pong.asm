@@ -1,0 +1,25 @@
+<%- include('../partials/head') %>
+<h1>Revenue</h1>
+<div class="cols">
+<section>
+  <h2>By directory / edition (approved and later)</h2>
+  <table><thead><tr><th>Edition</th><th>Status</th><th class="num">Orders</th><th class="num">Monthly</th><th class="num">Contract value</th></tr></thead><tbody>
+  <% for (const r of byDirectory) { %><tr><td><%= r.directory_name %> <%= r.edition_year %></td><td><%- include('../partials/badge', { value: r.status }) %></td><td class="num"><%= r.orders %></td><td class="num"><%= money(r.monthly) %></td><td class="num"><%= money(r.contract) %></td></tr><% } %>
+  </tbody></table>
+  <h2>Adjustments by reason</h2>
+  <table><thead><tr><th>Reason</th><th class="num">Count</th><th class="num">Total</th></tr></thead><tbody>
+  <% for (const a of adjustments) { %><tr><td><%= titleCase(a.reason) %></td><td class="num"><%= a.c %></td><td class="num"><%= money(a.total) %></td></tr><% } %>
+  </tbody></table>
+</section>
+<section>
+  <h2>By product (live books)</h2>
+  <table><thead><tr><th>Product</th><th>Category</th><th class="num">Lines</th><th class="num">Monthly</th></tr></thead><tbody>
+  <% for (const p of byProduct) { %><tr><td><%= p.name %></td><td><%- include('../partials/badge', { value: p.category }) %></td><td class="num"><%= p.lines %></td><td class="num"><%= money(p.monthly) %></td></tr><% } %>
+  </tbody></table>
+  <h2>By rep</h2>
+  <table><thead><tr><th>Rep</th><th class="num">Orders</th><th class="num">New</th><th class="num">Renewal/upsell</th><th class="num">Monthly</th></tr></thead><tbody>
+  <% for (const r of byRep) { %><tr><td><%= r.rep_name %></td><td class="num"><%= r.orders %></td><td class="num"><%= r.new_orders %></td><td class="num"><%= r.renewal_orders %></td><td class="num"><%= money(r.monthly) %></td></tr><% } %>
+  </tbody></table>
+</section>
+</div>
+<%- include('../partials/foot') %>

@@ -1,0 +1,12 @@
+<%- include('../partials/head') %>
+<div class="toolbar"><h1>Cases</h1><a class="btn" href="/cases/new">+ New case</a></div>
+<form class="filters" method="get"><select name="status" onchange="this.form.submit()"><option value="">Any status</option><% for (const s of ['open','in_progress','resolved','closed']) { %><option value="<%= s %>" <%= status === s ? 'selected' : '' %>><%= titleCase(s) %></option><% } %></select></form>
+<table>
+  <thead><tr><th>Case</th><th>Account</th><th>Type</th><th>Priority</th><th>Subject</th><th>Owner</th><th>Opened</th><th>Status</th></tr></thead>
+  <tbody>
+  <% for (const c of cases) { %>
+    <tr><td><a href="/cases/<%= c.id %>"><%= c.case_number %></a></td><td><a href="/accounts/<%= c.account_id %>"><%= c.account_name %></a></td><td><%= titleCase(c.type) %></td><td><%- include('../partials/badge', { value: c.priority }) %></td><td><%= c.subject %></td><td><%= c.owner_name %></td><td><%= c.opened_at.slice(0,10) %></td><td><%- include('../partials/badge', { value: c.status }) %></td></tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

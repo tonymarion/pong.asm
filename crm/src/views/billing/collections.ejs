@@ -1,0 +1,13 @@
+<%- include('../partials/head') %>
+<h1>Collections queue</h1>
+<p class="muted">Accounts with invoices more than 30 days past due. Stage is derived from the oldest open invoice: 31–60 dunning 1, 61–90 dunning 2, 91–120 credit hold, 120+ collections / write-off review.</p>
+<table>
+  <thead><tr><th>Account</th><th>Stage</th><th class="num">Overdue invoices</th><th class="num">Oldest (days)</th><th class="num">Overdue balance</th></tr></thead>
+  <tbody>
+  <% for (const r of rows) { %>
+    <tr><td><a href="/accounts/<%= r.account_id %>"><%= r.account_name %></a> <span class="muted"><%= r.account_number %></span></td><td><%= r.stage %></td><td class="num"><%= r.count %></td><td class="num <%= r.oldest > 90 ? 'bad' : 'warn' %>"><%= r.oldest %></td><td class="num"><%= money(r.balance) %></td></tr>
+  <% } %>
+  <% if (!rows.length) { %><tr><td colspan="5" class="muted">Nothing over 30 days.</td></tr><% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

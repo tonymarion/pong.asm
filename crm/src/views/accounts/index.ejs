@@ -1,0 +1,28 @@
+<%- include('../partials/head') %>
+<div class="toolbar">
+  <h1>Accounts <span class="muted">(<%= accounts.length %>)</span></h1>
+  <a class="btn" href="/accounts/new">+ New account</a>
+</div>
+<form class="filters" method="get">
+  <input type="search" name="q" value="<%= filters.search %>" placeholder="Name, phone, #, city, heading">
+  <select name="status"><option value="">Any status</option><% for (const s of ['prospect','active','inactive','collections']) { %><option value="<%= s %>" <%= filters.status === s ? 'selected' : '' %>><%= titleCase(s) %></option><% } %></select>
+  <select name="rep"><option value="">Any rep</option><% for (const u of reps) { %><option value="<%= u.id %>" <%= String(filters.rep) === String(u.id) ? 'selected' : '' %>><%= u.name %></option><% } %></select>
+  <select name="territory"><option value="">Any territory</option><% for (const t of territories) { %><option value="<%= t.id %>" <%= String(filters.territory) === String(t.id) ? 'selected' : '' %>><%= t.name %></option><% } %></select>
+  <button>Filter</button> <a href="/accounts">Clear</a>
+</form>
+<table>
+  <thead><tr><th>Account #</th><th>Name</th><th>Status</th><th>Heading</th><th>City</th><th>Phone</th><th>Rep</th><th class="num">Orders</th><th class="num">Balance</th></tr></thead>
+  <tbody>
+  <% for (const a of accounts) { %>
+    <tr>
+      <td class="muted"><%= a.account_number %></td>
+      <td><a href="/accounts/<%= a.id %>"><%= a.name %></a><% if (a.credit_hold) { %> <span class="badge badge-collections">Hold</span><% } %></td>
+      <td><%- include('../partials/badge', { value: a.status }) %></td>
+      <td><%= a.industry %></td><td><%= a.billing_city %>, <%= a.billing_state %></td><td><%= a.phone %></td><td><%= a.rep_name %></td>
+      <td class="num"><%= a.order_count %></td>
+      <td class="num <%= a.balance_cents > 0 ? 'warn' : '' %>"><%= money(a.balance_cents) %></td>
+    </tr>
+  <% } %>
+  </tbody>
+</table>
+<%- include('../partials/foot') %>

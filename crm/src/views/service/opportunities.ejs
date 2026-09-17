@@ -1,0 +1,18 @@
+<%- include('../partials/head') %>
+<div class="toolbar"><h1>Pipeline</h1>
+<form class="filters" method="get"><select name="edition" onchange="this.form.submit()"><option value="">All open editions</option><% for (const e of editions) { %><option value="<%= e.id %>" <%= editionId === e.id ? 'selected' : '' %>><%= e.name %> <%= e.edition_year %> (<%= titleCase(e.status) %>, closes <%= e.close_date %>)</option><% } %></select></form></div>
+<div class="board">
+<% for (const s of stages) { const items = byStage[s]; %>
+  <div class="col"><h3><%= titleCase(s) %> · <%= items.length %> · <%= money(items.reduce((t, o) => t + o.est_monthly_cents, 0)) %>/mo</h3>
+  <% for (const o of items) { %>
+    <div class="item">
+      <a href="/accounts/<%= o.account_id %>"><%= o.account_name %></a><br>
+      <span class="amt"><%= money(o.est_monthly_cents) %>/mo</span> · <%= titleCase(o.source) %><br>
+      <span class="muted"><%= o.directory_name %> <%= o.edition_year %> · <%= o.rep_name ?? '' %> · close <%= o.expected_close %></span>
+      <form class="inline" method="post" action="/opportunities/<%= o.id %>/stage" style="margin-top:4px"><select name="stage" onchange="this.form.submit()"><% for (const t of stages) { %><option value="<%= t %>" <%= t === s ? 'selected' : '' %>><%= titleCase(t) %></option><% } %></select></form>
+    </div>
+  <% } %>
+  </div>
+<% } %>
+</div>
+<%- include('../partials/foot') %>
