@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Vinted Fit
 // @namespace    vinted-fit
-// @version      0.4.0
+// @version      0.4.1
 // @description  Size/brand filtering, like/dislike voting with reasons, taste scoring, closet and outfit builder on top of vinted.com
 // @match        https://www.vinted.com/*
 // @run-at       document-start
-// @inject-into  page
+// @inject-into  auto
 // @grant        none
 // ==/UserScript==
 
