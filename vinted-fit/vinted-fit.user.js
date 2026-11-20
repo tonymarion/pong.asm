@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vinted Fit
 // @namespace    vinted-fit
-// @version      0.3.0
+// @version      0.4.0
 // @description  Size/brand filtering, like/dislike voting with reasons, taste scoring, closet and outfit builder on top of vinted.com
 // @match        https://www.vinted.com/*
 // @run-at       document-start
@@ -32,6 +32,7 @@
     items: {},   // id -> item
     outfits: [], // { id, name, pieces: [{ kind: 'vinted'|'own', id }] }
     feedSeenAt: 0,
+    curious: [], // style ids the user wants to explore
   };
   let S = load();
 
@@ -261,6 +262,16 @@
       how: 'Few colors, no logos, everything fitted well; quality does the talking.', tries: ['white leather sneakers', 'plain heavyweight tee', 'black slim jeans'] },
     { id: 'tailor', name: 'Tailoring', re: /suits?\b|blazer|sport ?coat|trousers?|pleat|dress shoes?|derby|waistcoat/, next: ['smart'],
       how: 'Start with a soft, unstructured blazer over jeans you already own before a full suit.', tries: ['unstructured blazer', 'wool trousers', 'suede derby shoes'] },
+    { id: 'vintage', name: 'Vintage eclectic / 70s', re: /vintage|70s|1970s|60s|flared?\b|bootcut|paisley|crochet|embroider|camp collar|cuban collar|patchwork|fringe|tie.dye|boho|hippie/, next: ['western', 'heritage'],
+      how: 'Pieces from different eras that share a color or texture. One loud vintage piece at a time, everything else plain and well fitted.', tries: ['vintage camp collar shirt', '70s suede jacket', 'vintage corduroy pants'] },
+    { id: 'western', name: 'Western / Americana', re: /western|pearl snap|denim jacket|trucker jacket|cowboy|levi|bandana|sawtooth/, next: ['heritage', 'vintage'],
+      how: 'Denim on denim, pearl snaps and worn-in leather, grounded by your selvedge.', tries: ['pearl snap western shirt', 'vintage trucker jacket', 'roper boots'] },
+    { id: 'prep', name: 'Prep / Ivy', re: /rugby|cable.knit|madras|seersucker|penny loafer|boat shoe|ralph lauren|brooks brothers|j\.? ?crew|khaki|repp/, next: ['smart', 'tailor'],
+      how: 'Collegiate classics worn a little loose: rugby shirts, cable knits, loafers with jeans.', tries: ['rugby shirt', 'cable knit sweater', 'penny loafers'] },
+    { id: 'outdoor', name: 'Outdoor / gorpcore', re: /fleece|patagonia|arc.?teryx|north face|hiking|trail|shell jacket|puffer|salomon/, next: ['street', 'heritage'],
+      how: 'Technical outdoor gear worn in town: fleece, shells and trail shoes with regular jeans.', tries: ['patagonia fleece', 'shell jacket', 'trail sneakers'] },
+    { id: 'rock', name: 'Rock / moto', re: /leather jacket|moto|biker|chelsea boot|band tee|black skinny/, next: ['minimal', 'vintage'],
+      how: 'Dark, slim and a bit worn: black denim, a leather jacket, boots.', tries: ['leather moto jacket', 'black chelsea boots', 'vintage band tee'] },
   ];
   function styleMix() {
     const F = fam();
@@ -272,7 +283,9 @@
     const home = rows.filter((r, i) => r.n && (i === 0 || r.share >= 0.2)).map(r => r.st);
     const next = [];
     home.forEach(h2 => h2.next.forEach(id => { const st = STYLES.find(x => x.id === id); if (!home.includes(st) && !next.includes(st)) next.push(st); }));
-    return (F.mix = { rows: rows.filter(r => r.n), home, next: home.length ? next : [] });
+    const curious = (S.curious || []).map(id => STYLES.find(x => x.id === id)).filter(st => st && !home.includes(st));
+    const all = curious.concat((home.length ? next : []).filter(st => !curious.includes(st)));
+    return (F.mix = { rows: rows.filter(r => r.n), home, next: all });
   }
   const PALETTE = { black: [20, 20, 20], white: [240, 240, 240], grey: [128, 128, 128], charcoal: [55, 55, 60], navy: [25, 35, 70], blue: [50, 90, 180], red: [190, 30, 40], burgundy: [110, 20, 40], green: [40, 130, 60], olive: [95, 100, 50], brown: [100, 65, 40], tan: [200, 170, 130], cream: [230, 220, 195], pink: [235, 160, 180], purple: [110, 60, 150], yellow: [235, 205, 60], orange: [230, 120, 40] };
   function photoColor(cv) {
@@ -655,10 +668,18 @@
           add('<div class="vf-empty" style="padding:0 4px 8px;color:#111">' + esc(mix.home.map(x => x.name).join(' + ')) + '</div>');
           add('<div>' + mix.rows.map(r => '<span class="vf-chip" style="margin:0 6px 6px 0">' + esc(r.st.name) + ' <small style="color:#777">' + Math.round(r.share * 100) + '%</small></span>').join('') + '</div>');
           add('<div class="vf-h">Where to take it next</div>');
-          mix.next.slice(0, 3).forEach(st2 => {
+          mix.next.slice(0, 5).forEach(st2 => {
             add('<label style="color:#111;font-weight:700;font-size:14px">' + esc(st2.name) + '</label>');
             add('<div class="vf-empty" style="padding:0 0 6px">' + esc(st2.how) + '</div>');
             add('<div>' + st2.tries.map(q => link(q, q)).join('') + '</div>');
+          });
+          add('<div class="vf-h">Other styles — tap any you’re curious about</div>');
+          const row = add('<div></div>');
+          STYLES.filter(x => !mix.home.includes(x)).forEach(x => {
+            const on = (S.curious || []).includes(x.id);
+            const c = h('<button class="vf-chip" style="margin:0 6px 6px 0;' + (on ? 'background:#111;color:#fff;border-color:#111' : '') + '">' + (on ? '✓ ' : '') + esc(x.name) + '</button>');
+            c.onclick = () => { S.curious = on ? S.curious.filter(i => i !== x.id) : (S.curious || []).concat(x.id); save(); refresh(); };
+            row.appendChild(c);
           });
         }
       }
