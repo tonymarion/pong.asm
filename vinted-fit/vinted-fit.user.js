@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vinted Fit
 // @namespace    vinted-fit
-// @version      0.2.0
+// @version      0.3.0
 // @description  Size/brand filtering, like/dislike voting with reasons, taste scoring, closet and outfit builder on top of vinted.com
 // @match        https://www.vinted.com/*
 // @run-at       document-start
@@ -201,7 +201,7 @@
     Object.keys(S.votes).forEach(id => {
       const v = S.votes[id], it = S.items[id];
       if (v.v <= 0 || !it) return;
-      titles.push(String(it.title || '').toLowerCase());
+      titles.push(((it.brand || '') + ' ' + (it.title || '')).toLowerCase());
       if (it.price != null) prices.push(it.price);
       Object.values(features(it)).flat().forEach(k => { like[k] = (like[k] || 0) + 1; });
     });
@@ -238,9 +238,41 @@
       (f.color || []).forEach(k => { const c = k.slice(6); if (EXPAND.includes(c) && !F.n(k) && !rejected(k)) why.push('New color: ' + c); });
       (f.style || []).forEach(k => { const w = k.slice(3); if (TEXTURE.includes(w) && !F.n(k) && !rejected(k)) why.push('New texture: ' + w); });
     }
+    if (F.total >= 3) {
+      const mix = styleMix(), text = ((it.brand || '') + ' ' + title).toLowerCase();
+      const hit = mix.next.find(st2 => st2.re.test(text));
+      if (hit && !mix.home.some(st2 => st2.re.test(text))) why.push('Toward ' + hit.name.toLowerCase());
+    }
     const g = gaps().find(e => e[3].test(title));
     if (g) why.push('Missing piece: ' + g[1]);
     return why;
+  }
+  // named styles: what signals them, which styles sit next to them, and how to step across
+  const STYLES = [
+    { id: 'street', name: 'Sneaker casual', re: /jordan|dunk|retro|hoodie|graphic|cargo|nike|sneaker|jogger|bomber/, next: ['heritage', 'minimal'],
+      how: 'Statement sneakers carry the outfit; everything else stays relaxed.', tries: ['bomber jacket', 'heavyweight hoodie', 'retro sneakers'] },
+    { id: 'heritage', name: 'Heritage / workwear', re: /selvedge|selvage|hiroshi kato|raw denim|chore|flannel|chambray|henley|work ?shirt|boots?\b|chukka|red wing|overshirt|corduroy/, next: ['smart', 'street'],
+      how: 'Built around good denim: add texture and a layer on top — overshirts, flannel, boots.', tries: ['chore jacket', 'flannel shirt', 'suede chukka boots'] },
+    { id: 'perf', name: 'Performance smart casual', re: /rhone|mizzen|commuter|performance|stretch|tech\b|lululemon|public rec|athletic|quarter.zip/, next: ['smart', 'minimal'],
+      how: 'Clean, comfortable, office-ready pieces in technical fabric.', tries: ['commuter pants', 'performance polo', 'quarter zip'] },
+    { id: 'smart', name: 'Smart casual', re: /oxford|chino|polo|loafer|merino|cashmere|crewneck|sweater|cardigan|button.down|dress shirt|linen/, next: ['tailor', 'heritage'],
+      how: 'The same jeans and sneakers, with a collar and a knit layered on top.', tries: ['merino crewneck sweater', 'oxford button down shirt', 'knit polo'] },
+    { id: 'minimal', name: 'Minimalist', re: /oliver cabell|common projects|low 1|plain|minimal|white (leather )?sneaker|everlane/, next: ['smart', 'tailor'],
+      how: 'Few colors, no logos, everything fitted well; quality does the talking.', tries: ['white leather sneakers', 'plain heavyweight tee', 'black slim jeans'] },
+    { id: 'tailor', name: 'Tailoring', re: /suits?\b|blazer|sport ?coat|trousers?|pleat|dress shoes?|derby|waistcoat/, next: ['smart'],
+      how: 'Start with a soft, unstructured blazer over jeans you already own before a full suit.', tries: ['unstructured blazer', 'wool trousers', 'suede derby shoes'] },
+  ];
+  function styleMix() {
+    const F = fam();
+    if (F.mix) return F.mix;
+    const rows = STYLES.map(st => ({ st, n: F.titles.filter(t => st.re.test(t)).length }));
+    const sum = rows.reduce((a, r) => a + r.n, 0) || 1;
+    rows.forEach(r => { r.share = r.n / sum; });
+    rows.sort((a, b) => b.n - a.n);
+    const home = rows.filter((r, i) => r.n && (i === 0 || r.share >= 0.2)).map(r => r.st);
+    const next = [];
+    home.forEach(h2 => h2.next.forEach(id => { const st = STYLES.find(x => x.id === id); if (!home.includes(st) && !next.includes(st)) next.push(st); }));
+    return (F.mix = { rows: rows.filter(r => r.n), home, next: home.length ? next : [] });
   }
   const PALETTE = { black: [20, 20, 20], white: [240, 240, 240], grey: [128, 128, 128], charcoal: [55, 55, 60], navy: [25, 35, 70], blue: [50, 90, 180], red: [190, 30, 40], burgundy: [110, 20, 40], green: [40, 130, 60], olive: [95, 100, 50], brown: [100, 65, 40], tan: [200, 170, 130], cream: [230, 220, 195], pink: [235, 160, 180], purple: [110, 60, 150], yellow: [235, 205, 60], orange: [230, 120, 40] };
   function photoColor(cv) {
@@ -616,6 +648,20 @@
           add('<div>' + plenty.map(e => '<span class="vf-chip" style="margin:0 6px 6px 0">' + esc(e[0]) + ' ×' + e[1] + '</span>').join('') + '</div>');
         }
       }
+      if (F.total >= 3) {
+        const mix = styleMix();
+        if (mix.home.length) {
+          add('<div class="vf-h">The style you wear</div>');
+          add('<div class="vf-empty" style="padding:0 4px 8px;color:#111">' + esc(mix.home.map(x => x.name).join(' + ')) + '</div>');
+          add('<div>' + mix.rows.map(r => '<span class="vf-chip" style="margin:0 6px 6px 0">' + esc(r.st.name) + ' <small style="color:#777">' + Math.round(r.share * 100) + '%</small></span>').join('') + '</div>');
+          add('<div class="vf-h">Where to take it next</div>');
+          mix.next.slice(0, 3).forEach(st2 => {
+            add('<label style="color:#111;font-weight:700;font-size:14px">' + esc(st2.name) + '</label>');
+            add('<div class="vf-empty" style="padding:0 0 6px">' + esc(st2.how) + '</div>');
+            add('<div>' + st2.tries.map(q => link(q, q)).join('') + '</div>');
+          });
+        }
+      }
       const g = gaps();
       [[1, 'Missing foundations'], [2, 'Next-level pieces you don’t have']].forEach(([lvl, label]) => {
         const rows = g.filter(e => e[0] === lvl);
@@ -786,5 +832,5 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 
-  window.__vintedFitDebug = { get state() { return S; }, fam, gaps, stretchWhy, sizeFits, score, parseLabel, typeOf, hiddenWhy };
+  window.__vintedFitDebug = { get state() { return S; }, fam, gaps, stretchWhy, styleMix, sizeFits, score, parseLabel, typeOf, hiddenWhy };
 })();
