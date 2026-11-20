@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Vinted Fit
 // @namespace    vinted-fit
-// @version      0.1.0
+// @version      0.2.0
 // @description  Size/brand filtering, like/dislike voting with reasons, taste scoring, closet and outfit builder on top of vinted.com
 // @match        https://www.vinted.com/*
 // @run-at       document-start
@@ -88,7 +88,7 @@
   const norm = s => String(s || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const COLORS = ['black', 'white', 'grey', 'gray', 'navy', 'blue', 'red', 'green', 'olive', 'brown', 'tan', 'khaki', 'beige', 'cream', 'pink', 'purple', 'yellow', 'orange', 'burgundy', 'maroon', 'charcoal', 'indigo'];
-  const STYLE = ['graphic', 'cargo', 'slim', 'skinny', 'relaxed', 'baggy', 'distressed', 'ripped', 'logo', 'striped', 'plaid', 'floral', 'camo', 'linen', 'denim', 'leather', 'suede', 'polo', 'hoodie', 'flannel', 'henley', 'selvedge', 'vintage', 'athletic', 'dress', 'tapered', 'straight'];
+  const STYLE = ['graphic', 'cargo', 'slim', 'skinny', 'relaxed', 'baggy', 'distressed', 'ripped', 'logo', 'striped', 'plaid', 'floral', 'camo', 'linen', 'denim', 'leather', 'suede', 'polo', 'hoodie', 'flannel', 'henley', 'selvedge', 'vintage', 'athletic', 'dress', 'tapered', 'straight', 'corduroy', 'knit', 'wool', 'cashmere', 'merino', 'pleated', 'oxford', 'chore', 'overshirt'];
 
   function typeOf(title) {
     const t = ' ' + String(title || '').toLowerCase() + ' ';
@@ -188,6 +188,71 @@
     if (sizeFits(it) === false) return 'wrong size';
     return '';
   }
+
+  // ---------------------------------------------------------------- style profile
+  let closetCache = [], famCache = null;
+  const ownItem = c => ({ id: c.id, title: c.name + ' ' + (c.color || ''), type: c.type || typeOf(c.name) });
+  /** how familiar each attribute is: pieces you own + items you liked */
+  function fam() {
+    if (famCache) return famCache;
+    const own = {}, like = {}, titles = [];
+    closetCache.forEach(c => { titles.push(ownItem(c).title.toLowerCase()); Object.values(features(ownItem(c))).flat().forEach(k => { own[k] = (own[k] || 0) + 1; }); });
+    const prices = [];
+    Object.keys(S.votes).forEach(id => {
+      const v = S.votes[id], it = S.items[id];
+      if (v.v <= 0 || !it) return;
+      titles.push(String(it.title || '').toLowerCase());
+      if (it.price != null) prices.push(it.price);
+      Object.values(features(it)).flat().forEach(k => { like[k] = (like[k] || 0) + 1; });
+    });
+    prices.sort((a, b) => a - b);
+    return (famCache = { own, like, titles, prices, total: titles.length, n: k => (own[k] || 0) + (like[k] || 0) });
+  }
+  const rejected = k => { const s = S.stats[k]; return !!s && s.d > s.l; };
+  // a point of view on a versatile wardrobe: core pieces first, then pieces that push further
+  const ESSENTIALS = [
+    [1, 'Dark indigo jeans', 'dark selvedge jeans', /jeans|denim/],
+    [1, 'White leather sneakers', 'white leather sneakers', /white.*(sneaker|low|trainer)|(sneaker|trainer).*white/],
+    [1, 'Chinos in tan or olive', 'chinos', /chino/],
+    [1, 'Oxford button-down', 'oxford button down shirt', /oxford/],
+    [1, 'Fine-knit sweater', 'merino crewneck sweater', /sweater|merino|cashmere|crewneck/],
+    [1, 'Leather or suede boots', 'suede chukka boots', /chukka|chelsea|boots?\b/],
+    [2, 'Overshirt / chore jacket', 'overshirt', /overshirt|chore|shacket/],
+    [2, 'Unstructured blazer', 'unstructured blazer', /blazer|sport ?coat/],
+    [2, 'Knit polo', 'knit polo', /knit.*polo|polo.*knit|sweater polo/],
+    [2, 'Loafers', 'leather loafers', /loafer/],
+    [2, 'Linen shirt', 'linen shirt', /linen/],
+    [2, 'Pleated or relaxed trousers', 'pleated trousers', /pleat|trousers?/],
+    [2, 'Suede or leather jacket', 'suede jacket', /(suede|leather).*(jacket|bomber)/],
+  ];
+  const gaps = () => { const t = fam().titles; return ESSENTIALS.filter(e => !t.some(x => e[3].test(x))); };
+  const EXPAND = ['olive', 'burgundy', 'cream', 'brown', 'tan', 'green', 'charcoal', 'beige', 'khaki', 'maroon'];
+  const TEXTURE = ['suede', 'linen', 'corduroy', 'knit', 'wool', 'cashmere', 'merino', 'flannel', 'leather', 'pleated', 'selvedge'];
+  /** reasons an item would stretch the user's style; [] if it is inside the comfort zone or low quality */
+  function stretchWhy(it) {
+    const F = fam(), st = it.brand ? S.stats['brand:' + norm(it.brand)] : null;
+    const quality = brandIn(S.brands.liked, it.brand) || (st && st.l > st.d) || (it.price != null && it.price >= 30);
+    if (!quality || !it.title) return [];
+    const f = features(it), why = [], title = it.title.toLowerCase();
+    if (F.total >= 3) {
+      (f.color || []).forEach(k => { const c = k.slice(6); if (EXPAND.includes(c) && !F.n(k) && !rejected(k)) why.push('New color: ' + c); });
+      (f.style || []).forEach(k => { const w = k.slice(3); if (TEXTURE.includes(w) && !F.n(k) && !rejected(k)) why.push('New texture: ' + w); });
+    }
+    const g = gaps().find(e => e[3].test(title));
+    if (g) why.push('Missing piece: ' + g[1]);
+    return why;
+  }
+  const PALETTE = { black: [20, 20, 20], white: [240, 240, 240], grey: [128, 128, 128], charcoal: [55, 55, 60], navy: [25, 35, 70], blue: [50, 90, 180], red: [190, 30, 40], burgundy: [110, 20, 40], green: [40, 130, 60], olive: [95, 100, 50], brown: [100, 65, 40], tan: [200, 170, 130], cream: [230, 220, 195], pink: [235, 160, 180], purple: [110, 60, 150], yellow: [235, 205, 60], orange: [230, 120, 40] };
+  function photoColor(cv) {
+    try {
+      const w = cv.width, hh = cv.height, d = cv.getContext('2d').getImageData(w * 0.3, hh * 0.3, w * 0.4, hh * 0.4).data;
+      let r = 0, g = 0, b = 0, n = 0;
+      for (let i = 0; i < d.length; i += 16) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+      r /= n; g /= n; b /= n;
+      return Object.keys(PALETTE).map(k => [Math.hypot(PALETTE[k][0] - r, PALETTE[k][1] - g, PALETTE[k][2] - b), k]).sort((a, b2) => a[0] - b2[0])[0][1];
+    } catch (e) { return ''; }
+  }
+  const nameColor = name => { const c = COLORS.find(x => new RegExp('\\b' + x + '\\b', 'i').test(name)); return c === 'gray' ? 'grey' : c || ''; };
 
   // ---------------------------------------------------------------- voting
   const REASONS = [
@@ -342,7 +407,7 @@
     bar.dataset.id = it.id;
     const sc = score(it), v = S.votes[it.id];
     const el = bar.querySelector('.vf-score');
-    el.textContent = (sc > 0 ? '+' : '') + sc;
+    el.textContent = (stretchWhy(it).length ? '↗ ' : '') + (sc > 0 ? '+' : '') + sc;
     el.className = 'vf-score ' + (sc >= 1 ? 'vf-good' : sc <= -1 ? 'vf-bad' : '');
     bar.querySelector('[data-a="like"]').classList.toggle('vf-on', !!(v && v.v > 0));
     card.style.opacity = sc <= -1.5 ? '0.45' : '';
@@ -381,7 +446,7 @@
   .vf-fab i { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #0a7; font: 700 11px/20px system-ui; font-style: normal; }
   .vf-panel { position: fixed; inset: 0; z-index: 2147483001; background: #f6f6f4; color: #111; display: flex; flex-direction: column; font-size: 15px; }
   .vf-tabs { display: flex; background: #111; padding-top: env(safe-area-inset-top); }
-  .vf-tabs button { flex: 1; padding: 14px 4px; border: 0; background: none; color: #aaa; font-size: 14px; font-weight: 600; }
+  .vf-tabs button { flex: 1; padding: 14px 2px; border: 0; background: none; color: #aaa; font-size: 13px; font-weight: 600; }
   .vf-tabs button.vf-on { color: #fff; box-shadow: inset 0 -3px #0a7; }
   .vf-body { flex: 1; overflow-y: auto; padding: 12px 12px calc(24px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
   .vf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
@@ -390,6 +455,7 @@
   .vf-card .vf-meta { padding: 7px 8px 9px; font-size: 12px; line-height: 1.35; }
   .vf-card .vf-meta b { display: block; font-size: 13px; }
   .vf-card .vf-new { position: absolute; bottom: 74px; left: 6px; background: #0a7; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 8px; }
+  .vf-tag { color: #0a7; font-weight: 700; }
   .vf-x { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 15px; border: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 14px; }
   .vf-h { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #666; margin: 18px 0 8px; }
   .vf-h:first-child { margin-top: 2px; }
@@ -482,7 +548,7 @@
     const c = h('<div class="vf-card"><a href="' + esc(safeUrl(it.url)) + '"><img loading="lazy" src="' + esc(safeImg(it.img)) + '" alt=""></a>' +
       (opts.isNew ? '<span class="vf-new">NEW</span>' : '') +
       '<div class="vf-meta"><b>' + esc(it.brand || 'Unbranded') + (it.price != null ? ' · $' + esc(it.price) : '') + '</b>' +
-      esc(it.title || '') + '<br>' + esc([it.size, it.cond].filter(Boolean).join(' · ')) + '</div></div>');
+      esc(it.title || '') + '<br>' + esc([it.size, it.cond].filter(Boolean).join(' · ')) + (opts.tag ? '<br><span class="vf-tag">' + esc(opts.tag) + '</span>' : '') + '</div></div>');
     if (opts.remove) {
       const x = h('<button class="vf-x">✕</button>'); x.onclick = opts.remove; c.appendChild(x);
     } else {
@@ -525,8 +591,57 @@
       }
     }
 
+    if (tab === 'style') {
+      const F = fam();
+      const link = (label, q) => '<a class="vf-chip" style="margin:0 6px 6px 0" href="/catalog?search_text=' + encodeURIComponent(q) + '&order=newest_first">' + esc(label) + '</a>';
+      const top = (prefix, n) => Object.keys(Object.assign({}, F.own, F.like)).filter(k => k.startsWith(prefix))
+        .map(k => [F.n(k), k]).sort((a, b) => b[0] - a[0]).slice(0, n);
+      const chips = rows => rows.map(r => '<span class="vf-chip" style="margin:0 6px 6px 0">' + esc(r[1].split(':').pop()) + ' <small style="color:#777">own ' + (F.own[r[1]] || 0) + ' · liked ' + (F.like[r[1]] || 0) + '</small></span>').join('');
+      add('<div class="vf-h">Your style right now</div>');
+      if (F.total < 3) {
+        add('<div class="vf-empty" style="padding:0 4px 8px">Not enough to go on yet. Add the pieces you wear most in the Closet tab and 👍 a few listings — the profile is built from what you own plus what you like.</div>');
+      } else {
+        const cols = top('color:', 3).map(r => r[1].slice(6)), kws = top('kw:', 3).map(r => r[1].slice(3));
+        const med = F.prices.length ? F.prices[Math.floor(F.prices.length / 2)] : null;
+        add('<div class="vf-empty" style="padding:0 4px 10px;color:#111">' + esc('Mostly ' + (cols.join(', ') || 'unlabelled colors') + (kws.length ? '; leaning ' + kws.join(', ') : '') + (med != null ? '; you like things around $' + med : '') + '. Based on ' + closetCache.length + ' pieces you own and ' + (F.total - closetCache.length) + ' likes.') + '</div>');
+        [['Colors', 'color:'], ['Cuts and fabrics', 'kw:'], ['Brands', 'brand:']].forEach(([label, pre]) => {
+          const rows = top(pre, 8);
+          if (rows.length) { add('<label>' + label + '</label>'); add('<div>' + chips(rows) + '</div>'); }
+        });
+        const combos = {};
+        closetCache.forEach(c => { const k = [(c.color || ''), (c.type || typeOf(c.name))].join(' ').trim(); combos[k] = (combos[k] || 0) + 1; });
+        const plenty = Object.entries(combos).filter(e => e[1] >= 3 && !/other$/.test(e[0]));
+        if (plenty.length) {
+          add('<div class="vf-h">You already have plenty of</div>');
+          add('<div>' + plenty.map(e => '<span class="vf-chip" style="margin:0 6px 6px 0">' + esc(e[0]) + ' ×' + e[1] + '</span>').join('') + '</div>');
+        }
+      }
+      const g = gaps();
+      [[1, 'Missing foundations'], [2, 'Next-level pieces you don’t have']].forEach(([lvl, label]) => {
+        const rows = g.filter(e => e[0] === lvl);
+        if (rows.length) { add('<div class="vf-h">' + label + '</div>'); add('<div>' + rows.map(e => link(e[1], e[2])).join('') + '</div>'); }
+      });
+      if (F.total >= 3) {
+        const newCols = EXPAND.filter(c => !F.n('color:' + c) && !rejected('color:' + c)).slice(0, 5);
+        const newTex = TEXTURE.filter(w => !F.n('kw:' + w) && !rejected('kw:' + w)).slice(0, 5);
+        const garment = ['chinos', 'shirt', 'sweater', 'jacket', 'sneakers'];
+        if (newCols.length || newTex.length) {
+          add('<div class="vf-h">Push your style</div>');
+          add('<div class="vf-empty" style="padding:0 4px 8px">Colors and textures that are absent from your closet and likes, and that you haven’t rejected.</div>');
+          add('<div>' + newCols.map((c, i) => link(c + ' ' + garment[i % garment.length], c + ' ' + garment[i % garment.length])).join('') + newTex.map(w => link(w, w + ' mens')).join('') + '</div>');
+        }
+      }
+      const picks = Object.values(S.items).filter(it => it.title && !S.votes[it.id] && !hiddenWhy(it))
+        .map(it => [stretchWhy(it), it]).filter(x => x[0].length && score(x[1]) > -1)
+        .sort((a, b) => (b[0].length + 0.3 * score(b[1])) - (a[0].length + 0.3 * score(a[1])));
+      add('<div class="vf-h">Stretch picks from what you’ve browsed (' + picks.length + ')</div>');
+      if (!picks.length) add('<div class="vf-empty" style="padding:0 4px">None yet. Tap a suggestion above and browse; anything that fits you and widens your wardrobe lands here, and is marked ↗ on Vinted.</div>');
+      const grid = add('<div class="vf-grid"></div>');
+      picks.slice(0, 60).forEach(x => grid.appendChild(itemCard(x[1], { tag: x[0].join(' · ') })));
+    }
+
     if (tab === 'outfits') {
-      const mine = await closet.all();
+      const mine = closetCache;
       const nb = add('<button class="vf-btn">＋ New outfit</button>');
       nb.onclick = () => { const name = prompt('Outfit name', 'Outfit ' + (S.outfits.length + 1)); if (name) { S.outfits.push({ id: 'o' + Date.now(), name, pieces: [] }); save(); render(); } };
       if (!S.outfits.length) add('<div class="vf-empty">Create an outfit, then add Vinted items with the ＋ button on any listing and your own pieces from the Closet tab.</div>');
@@ -557,8 +672,8 @@
     }
 
     if (tab === 'closet') {
-      const mine = await closet.all();
-      add('<div class="vf-empty" style="padding:4px 4px 12px">Photos of clothes and shoes you already own. They stay on this device.</div>');
+      const mine = closetCache;
+      add('<div class="vf-empty" style="padding:4px 4px 12px">Photos of clothes and shoes you already own. They stay on this device and feed your style profile, so add the things you wear most.</div>');
       const inp = h('<input type="file" accept="image/*" style="display:none">');
       const btn = add('<button class="vf-btn">＋ Add a photo</button>');
       body.appendChild(inp);
@@ -572,14 +687,21 @@
           const cv = document.createElement('canvas');
           cv.width = img.width * k; cv.height = img.height * k;
           cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-          await closet.put({ id: 'c' + Date.now(), name, img: cv.toDataURL('image/jpeg', 0.8) });
-          URL.revokeObjectURL(img.src); render();
+          await closet.put({ id: 'c' + Date.now(), name, img: cv.toDataURL('image/jpeg', 0.8), type: typeOf(name), color: nameColor(name) || photoColor(cv) });
+          URL.revokeObjectURL(img.src); await reloadCloset();
         };
         img.src = URL.createObjectURL(file);
       };
       const grid = add('<div class="vf-grid" style="margin-top:12px"></div>');
       mine.forEach(c => {
-        const card = itemCard({ id: c.id, title: c.name, brand: 'Yours', img: c.img, url: '#' }, { remove: async () => { if (confirm('Remove "' + c.name + '"?')) { await closet.del(c.id); render(); } } });
+        const card = itemCard({ id: c.id, title: c.name, brand: 'Yours', img: c.img, url: '#', size: c.type || typeOf(c.name), cond: c.color }, { remove: async () => { if (confirm('Remove "' + c.name + '"?')) { await closet.del(c.id); await reloadCloset(); } } });
+        const ed = h('<button class="vf-btn vf-alt" style="margin:0 8px 8px">Edit type / color</button>');
+        ed.onclick = async () => {
+          const type = prompt('Type: top, pants, shoes or other', c.type || typeOf(c.name)); if (type == null) return;
+          const color = prompt('Main color', c.color || ''); if (color == null) return;
+          await closet.put(Object.assign({}, c, { type: type.trim().toLowerCase(), color: color.trim().toLowerCase() })); await reloadCloset();
+        };
+        card.appendChild(ed);
         const b = h('<button class="vf-btn vf-alt" style="margin:0 8px 8px">＋ Outfit</button>');
         b.onclick = () => pickOutfit({ kind: 'own', id: c.id });
         card.appendChild(b); grid.appendChild(card);
@@ -627,7 +749,7 @@
   }
 
   function openPanel() {
-    panel = h('<div class="vf-panel vf-root"><div class="vf-tabs"><button data-t="feed">Feed</button><button data-t="outfits">Outfits</button><button data-t="closet">Closet</button><button data-t="settings">Settings</button><button data-t="close">✕</button></div><div class="vf-body"></div></div>');
+    panel = h('<div class="vf-panel vf-root"><div class="vf-tabs"><button data-t="feed">Feed</button><button data-t="style">Style</button><button data-t="outfits">Outfits</button><button data-t="closet">Closet</button><button data-t="settings">Settings</button><button data-t="close">✕</button></div><div class="vf-body"></div></div>');
     panel.querySelector('.vf-tabs').onclick = e => {
       const t = e.target.dataset.t; if (!t) return;
       if (t === 'close') { panel.remove(); panel = null; S.feedSeenAt = Date.now(); save(); refresh(); return; }
@@ -637,7 +759,9 @@
     render();
   }
 
+  async function reloadCloset() { closetCache = await closet.all(); refresh(); }
   function refresh(rerender) {
+    famCache = null;
     scan();
     if (fab) {
       const n = feedItems().filter(it => (it.first || 0) > S.feedSeenAt).length;
@@ -658,8 +782,9 @@
       schedule();
     }).observe(document.body, { childList: true, subtree: true });
     refresh();
+    reloadCloset();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 
-  window.__vintedFitDebug = { get state() { return S; }, sizeFits, score, parseLabel, typeOf, hiddenWhy };
+  window.__vintedFitDebug = { get state() { return S; }, fam, gaps, stretchWhy, sizeFits, score, parseLabel, typeOf, hiddenWhy };
 })();

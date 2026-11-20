@@ -7,6 +7,7 @@ A userscript that runs on `www.vinted.com` in your phone's browser (not the Vint
 - **👍 / 👎 on every listing** – 👎 hides the item for good and asks why (condition, color, style, size, price, brand, or "just this one"). Only the reasons you pick count against future items, so a scruffy item from a brand you like doesn't hurt the brand.
 - **Taste score** – a badge on each listing, learned from your votes plus favourites, offers and purchases you make on Vinted.
 - **Feed** – everything you've scrolled past that fits, best match first, with shortcuts to the newest listings for each liked brand.
+- **Style profile** – the Style tab summarises your colors, cuts, fabrics and brands from what you own plus what you like, shows what you already have plenty of, lists wardrobe pieces you're missing, and suggests colors and textures outside your usual range. Listings that would widen your wardrobe are marked ↗ and collected as stretch picks.
 - **Closet and outfits** – add photos of what you own and combine them with Vinted items.
 
 All data stays in the browser on your device. Use Settings → Export backup now and then.
@@ -30,4 +31,5 @@ A black ✦ button appears bottom-right; it opens Feed, Outfits, Closet and Sett
 
 - It only sees listings your browser loads; it makes no requests of its own, so there is no background alerting.
 - It does not know when an item in an outfit has sold.
+- The style advice is a fixed set of rules (a list of versatile menswear pieces, colors and textures) matched against listing titles; it does not look at listing photos. Closet photos are only read for their main color.
 - Built and tested against a mock of Vinted's listing markup, not the live site. If buttons don't appear on listings, the card detection needs adjusting.
