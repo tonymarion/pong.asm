@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cuff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: one phone-width column. A card deck on raw indigo denim; every card carries a selvedge edge (ecru band, red thread). */
+:root {
+  --denim: #172038;      /* raw indigo, the table everything sits on */
+  --denim-2: #222d4d;    /* raised surfaces on denim */
+  --ecru: #f1ebdd;       /* card stock, selvedge band */
+  --ink: #161a26;        /* text on ecru */
+  --thread: #c9382c;     /* selvedge red thread: the one accent */
+  --muted: #8b93ab;      /* secondary text on denim */
+  --like: #5d7a3a;       /* semantic: like */
+  --pass: #5a6074;       /* semantic: pass */
+  --line: rgba(241,235,221,.14);
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--denim); color: var(--ecru); font: 15px/1.45 var(--body); overscroll-behavior: none; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--thread); outline-offset: 2px; }
+.app { height: 100%; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; position: relative; overflow: hidden;
+  background: repeating-linear-gradient(115deg, transparent 0 3px, rgba(255,255,255,.018) 3px 4px), var(--denim); }
+
+header { display: flex; align-items: center; gap: 10px; padding: 12px 16px 8px; }
+.logo { font: 800 30px/1 var(--display); letter-spacing: .04em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.logo i { width: 9px; height: 26px; background: var(--ecru); border-right: 2px solid var(--thread); display: block; }
+.seg { margin-left: auto; display: flex; background: var(--denim-2); border-radius: 999px; padding: 3px; }
+.seg button { border: 0; background: none; padding: 6px 12px; border-radius: 999px; font-weight: 600; font-size: 13px; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--ecru); color: var(--ink); }
+.icon-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: none; font-size: 17px; }
+
+main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.scroll { flex: 1; overflow-y: auto; padding: 4px 16px 24px; -webkit-overflow-scrolling: touch; }
+.note { font-size: 12px; color: var(--muted); padding: 0 16px 6px; display: flex; gap: 8px; align-items: center; }
+.note b { color: var(--ecru); font-weight: 600; }
+.cats { display: flex; gap: 6px; padding: 0 16px 8px; overflow-x: auto; scrollbar-width: none; }
+.cats::-webkit-scrollbar { display: none; }
+.chip { flex: none; border: 1px solid var(--line); background: none; border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 500; color: var(--ecru); text-decoration: none; display: inline-flex; gap: 6px; align-items: center; }
+.chip[aria-pressed="true"], .chip.on { background: var(--ecru); color: var(--ink); border-color: var(--ecru); }
+.chip small { color: var(--muted); font-size: 11px; }
+.chip.on small, .chip[aria-pressed="true"] small { color: #5a5f70; }
+.wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* deck */
+.deck { flex: 1; min-height: 0; position: relative; margin: 0 16px; }
+.card { position: absolute; inset: 0; background: var(--ecru); color: var(--ink); border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35); touch-action: none; user-select: none; will-change: transform; }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 12px; background: var(--ecru); border-right: 2px solid var(--thread); z-index: 2; }
+.card.under { transform: scale(.955) translateY(10px); filter: brightness(.86); }
+.card .art { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 14px 14px 0 26px; position: relative; }
+.card .art svg, .card .art img { max-width: 100%; max-height: 100%; height: 100%; object-fit: contain; }
+.card .info { padding: 10px 16px 14px 28px; display: flex; flex-direction: column; gap: 6px; }
+.card .brand { font: 800 27px/1 var(--display); text-transform: uppercase; letter-spacing: .02em; display: flex; align-items: baseline; gap: 10px; }
+.card .brand span { margin-left: auto; font: 700 20px/1 var(--body); font-variant-numeric: tabular-nums; }
+.card .title { font-weight: 500; }
+.card .meta { font-size: 13px; color: #5a5f70; }
+.why { display: flex; flex-wrap: wrap; gap: 5px; }
+.why span { font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 6px; background: rgba(22,26,38,.08); }
+.why .s { background: var(--thread); color: #fff; }
+.why .g { background: var(--like); color: #fff; }
+.match { position: absolute; top: 12px; right: 12px; background: var(--ink); color: var(--ecru); font: 800 20px/1 var(--display); padding: 6px 9px; border-radius: 9px; letter-spacing: .03em; }
+.match small { font: 600 10px/1 var(--body); display: block; letter-spacing: .06em; opacity: .7; margin-top: 2px; }
+.stamp { position: absolute; top: 26px; font: 800 38px/1 var(--display); letter-spacing: .06em; padding: 4px 12px; border: 4px solid; border-radius: 10px; opacity: 0; z-index: 3; text-transform: uppercase; }
+.stamp.l { left: 30px; color: var(--like); transform: rotate(-12deg); }
+.stamp.p { right: 20px; color: var(--thread); transform: rotate(12deg); }
+.stamp.o { left: 50%; top: auto; bottom: 46%; transform: translateX(-50%); color: var(--ink); background: var(--ecru); }
+.back { position: absolute; inset: 0 0 0 14px; background: var(--ecru); padding: 18px 16px; overflow-y: auto; z-index: 1; display: none; }
+.card.flipped .back { display: block; }
+.back h3 { font: 800 22px/1.1 var(--display); text-transform: uppercase; margin: 0 0 8px; }
+.back h4 { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #5a5f70; margin: 14px 0 6px; }
+.back p { margin: 0 0 6px; }
+.back dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 0; font-size: 14px; }
+.back dt { color: #5a5f70; } .back dd { margin: 0; font-variant-numeric: tabular-nums; }
+.pair { display: flex; gap: 8px; overflow-x: auto; }
+.pair div { flex: none; width: 76px; font-size: 11px; text-align: center; line-height: 1.2; }
+.pair svg, .pair img { width: 76px; height: 76px; background: rgba(22,26,38,.06); border-radius: 10px; object-fit: cover; }
+
+.actions { display: flex; justify-content: center; align-items: center; gap: 16px; padding: 12px 16px 10px; }
+.act { border: 0; border-radius: 50%; width: 62px; height: 62px; font-size: 26px; display: grid; place-items: center; box-shadow: 0 4px 12px rgba(0,0,0,.3); }
+.act.sm { width: 46px; height: 46px; font-size: 18px; background: var(--denim-2); color: var(--ecru); }
+.act.no { background: var(--ecru); color: var(--thread); }
+.act.yes { background: var(--like); color: #fff; }
+.act:active { transform: scale(.94); }
+.empty { text-align: center; margin: auto; padding: 24px; color: var(--muted); max-width: 320px; }
+.empty h2 { font: 800 28px/1.05 var(--display); text-transform: uppercase; color: var(--ecru); margin: 0 0 8px; text-wrap: balance; }
+
+.why-bar { position: absolute; left: 12px; right: 12px; top: 58px; background: var(--ecru); color: var(--ink); border-radius: 14px; padding: 10px 12px; z-index: 20; box-shadow: 0 8px 24px rgba(0,0,0,.45); }
+.why-bar p { margin: 0 0 8px; font-size: 13px; font-weight: 600; display: flex; }
+.why-bar p button { margin-left: auto; border: 0; background: none; color: var(--thread); font-weight: 700; }
+.why-bar .wrap { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.why-bar p button { white-space: nowrap; }
+.why-bar .chip { color: var(--ink); border-color: rgba(22,26,38,.25); padding: 7px 11px; }
+.why-bar .chip.on { background: var(--ink); color: var(--ecru); border-color: var(--ink); }
+
+/* lists */
+h2.sec { font: 800 22px/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; margin: 22px 0 4px; }
+h2.sec:first-child { margin-top: 6px; }
+p.sub { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; max-width: 65ch; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 10px; }
+.tile { background: var(--ecru); color: var(--ink); border-radius: 12px; overflow: hidden; position: relative; display: flex; flex-direction: column; border-left: 6px solid var(--ecru); box-shadow: inset 2px 0 0 var(--thread); }
+.tile .pic { aspect-ratio: 1; display: grid; place-items: center; padding: 8px; }
+.tile .pic svg, .tile .pic img { width: 100%; height: 100%; object-fit: contain; }
+.tile .t { padding: 0 9px 9px; font-size: 12.5px; line-height: 1.3; }
+.tile .t b { display: block; font: 800 16px/1.1 var(--display); text-transform: uppercase; }
+.tile .x { position: absolute; top: 5px; right: 5px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(22,26,38,.75); color: #fff; font-size: 13px; }
+.tile .plus { margin: 0 9px 9px; border: 1px solid rgba(22,26,38,.25); background: none; color: var(--ink); border-radius: 8px; padding: 6px; font-size: 12.5px; font-weight: 600; }
+.btn { border: 0; border-radius: 12px; padding: 12px 16px; font-weight: 700; background: var(--ecru); color: var(--ink); }
+.btn.ghost { background: none; border: 1px solid var(--line); color: var(--ecru); }
+.btn.red { background: var(--thread); color: #fff; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.bar { display: grid; grid-template-columns: 150px 1fr 38px; gap: 10px; align-items: center; font-size: 13.5px; margin-bottom: 6px; }
+.bar i { height: 10px; border-radius: 5px; background: var(--denim-2); display: block; overflow: hidden; }
+.bar i b { display: block; height: 100%; background: var(--ecru); border-right: 2px solid var(--thread); }
+.bar span { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.sw { display: inline-flex; align-items: center; gap: 7px; }
+.sw i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(255,255,255,.35); display: block; }
+.outfit { background: var(--denim-2); border-radius: 14px; padding: 12px; margin-bottom: 12px; }
+.outfit h3 { font: 800 20px/1.1 var(--display); text-transform: uppercase; margin: 0; }
+.outfit .look { display: flex; gap: 8px; overflow-x: auto; margin: 10px 0; }
+.outfit .look .tile { flex: none; width: 112px; }
+.next { background: var(--denim-2); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+.next h3 { margin: 0 0 2px; font-size: 15px; } .next p { margin: 0 0 8px; color: var(--muted); font-size: 13.5px; }
+
+nav { display: flex; border-top: 1px solid var(--line); background: var(--denim); }
+nav button { flex: 1; border: 0; background: none; padding: 9px 2px 11px; font-size: 11.5px; font-weight: 600; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px; position: relative; }
+nav button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+nav button[aria-current="page"] { color: var(--ecru); }
+nav button[aria-current="page"]::before { content: ""; position: absolute; top: -1px; left: 28%; right: 28%; height: 3px; background: var(--thread); }
+nav .n { position: absolute; top: 4px; left: 54%; background: var(--thread); color: #fff; border-radius: 9px; font-size: 10px; padding: 0 5px; min-width: 16px; }
+
+.scrim { position: absolute; inset: 0; background: rgba(8,11,22,.6); z-index: 30; display: flex; align-items: flex-end; }
+.sheet { width: 100%; max-height: 86%; overflow-y: auto; background: var(--ecru); color: var(--ink); border-radius: 18px 18px 0 0; padding: 18px 16px 22px; }
+.sheet h2 { font: 800 24px/1.1 var(--display); text-transform: uppercase; margin: 0 0 4px; }
+.sheet p { margin: 0 0 12px; color: #5a5f70; font-size: 13.5px; }
+.sheet label { display: block; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; margin: 12px 0 4px; color: #5a5f70; }
+.sheet input[type=text], .sheet select { width: 100%; padding: 11px; border-radius: 10px; border: 1px solid rgba(22,26,38,.3); background: #fff; color: var(--ink); font-size: 16px; }
+.sheet .opt { display: flex; width: 100%; text-align: left; padding: 12px; border-radius: 10px; border: 1px solid rgba(22,26,38,.2); background: none; color: var(--ink); margin-bottom: 8px; font-weight: 600; }
+.sheet .opt small { margin-left: auto; font-weight: 400; color: #5a5f70; }
+.sheet .btn { background: var(--ink); color: var(--ecru); width: 100%; margin-top: 14px; }
+.sheet .btn.ghost { background: none; color: var(--ink); border-color: rgba(22,26,38,.3); }
+.toast { position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%); background: var(--ecru); color: var(--ink); padding: 9px 14px; border-radius: 999px; font-size: 13px; font-weight: 600; z-index: 40; box-shadow: 0 6px 18px rgba(0,0,0,.4); white-space: nowrap; }
+@media (prefers-reduced-motion: no-preference) { .card.fly { transition: transform .28s ease-in, opacity .28s; } .card.snap { transition: transform .22s cubic-bezier(.2,1.3,.5,1); } .card.under { transition: transform .2s, filter .2s; } }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <div class="logo"><i></i>Cuff</div>
+    <div class="seg" id="mode" role="group" aria-label="Deck"></div>
+    <button class="icon-btn" data-act="settings" aria-label="Sizes and brands">⚙</button>
+  </header>
+  <main id="main"></main>
+  <nav id="nav"></nav>
+</div>
+<script>
+(function () {
+'use strict';
+
+// ------------------------------------------------------------------ sample listings (stand-in until Vinted is connected)
+// [brand, title, kind, color, size, condition, price, chest/pit-to-pit or note]
+const RAW = [
+  ['Taylor Stitch', 'Corduroy overshirt', 'overshirt', 'brown', 'M', 'Very good', 68, 'Pit to pit 21.5 in'],
+  ['Buck Mason', 'Wool overshirt', 'overshirt', 'charcoal', 'M', 'Very good', 74, 'Pit to pit 21.75 in'],
+  ['Flint and Tinder', 'Waxed trucker jacket', 'jacket', 'tan', 'M', 'Good', 110, 'Pit to pit 22 in'],
+  ['Faherty', 'CPO flannel overshirt', 'overshirt', 'rust', 'L', 'Very good', 55, 'Pit to pit 23.5 in'],
+  ['Alex Mill', 'Canvas chore jacket', 'jacket', 'navy', 'S', 'New with tags', 82, 'Boxy cut. Pit to pit 22 in'],
+  ['Taylor Stitch', 'Ojai chore jacket', 'jacket', 'tan', 'M', 'Good', 96, 'Pit to pit 22.5 in'],
+  ['Levi\'s', 'Vintage trucker jacket', 'jacket', 'blue', 'M', 'Good', 48, 'Type III, 1990s'],
+  ['Flint and Tinder', 'Flannel-lined bomber', 'jacket', 'olive', 'M', 'Very good', 88, 'Pit to pit 22 in'],
+  ['Bonobos', 'Unconstructed Italian wool blazer', 'blazer', 'navy', '38S', 'Very good', 95, 'No shoulder padding'],
+  ['Todd Snyder', 'Sport coat, brushed wool', 'blazer', 'brown', '38R', 'Very good', 140, 'Soft shoulder'],
+  ['J.Crew', 'Wool topcoat', 'coat', 'tan', '38', 'Good', 120, 'Camel. Hits mid-thigh'],
+  ['Vintage', '70s suede jacket', 'jacket', 'brown', 'M', 'Good', 135, 'Some patina at cuffs'],
+  ['AllSaints', 'Leather moto jacket', 'jacket', 'black', 'M', 'Very good', 180, ''],
+  ['Patagonia', 'Retro pile fleece', 'jacket', 'cream', 'M', 'Good', 70, ''],
+  ['Todd Snyder', 'Merino crewneck sweater', 'sweater', 'burgundy', 'M', 'Very good', 62, 'Pit to pit 21 in'],
+  ['Faherty', 'Cotton crewneck sweater', 'sweater', 'cream', 'M', 'Very good', 48, 'Runs roomy. Pit to pit 22 in'],
+  ['Bonobos', 'Merino crewneck sweater', 'sweater', 'red', 'M', 'New without tags', 44, 'Slim fit'],
+  ['Naadam', 'Cashmere crewneck', 'sweater', 'grey', 'M', 'Very good', 58, ''],
+  ['J.Crew', 'Cable knit sweater', 'sweater', 'cream', 'S', 'Good', 36, 'Classic fit. Pit to pit 21 in'],
+  ['Rhone', 'Performance quarter zip', 'sweater', 'charcoal', 'M', 'Very good', 46, ''],
+  ['Wallace & Barnes', 'Shawl collar cardigan', 'cardigan', 'brown', 'M', 'Very good', 78, 'Heavy lambswool knit'],
+  ['Alex Mill', 'Knit sweater vest', 'vest', 'navy', 'M', 'Very good', 40, ''],
+  ['Todd Snyder', 'Knit polo sweater', 'polo', 'olive', 'M', 'Very good', 58, 'Sweater polo, fine knit'],
+  ['Todd Snyder', 'Oxford button down shirt', 'shirt', 'white', 'M', 'Very good', 38, 'Slim. Pit to pit 20.75 in'],
+  ['J.Crew', 'Slim oxford button down', 'shirt', 'lightblue', 'M', 'Good', 22, 'Pit to pit 21 in'],
+  ['Brooks Brothers', 'Oxford button down, regular fit', 'shirt', 'white', 'L', 'Good', 24, ''],
+  ['Mizzen+Main', 'Leeward dress shirt, trim', 'shirt', 'white', 'M', 'Very good', 42, 'Trim fit'],
+  ['Mizzen+Main', 'Leeward gingham shirt, trim', 'shirt', 'lightblue', 'S', 'Very good', 36, 'Trim fit'],
+  ['Rhone', 'Commuter shirt, slim', 'shirt', 'blue', 'M', 'Very good', 44, ''],
+  ['Taylor Stitch', 'Chambray work shirt', 'shirt', 'blue', 'M', 'Good', 46, ''],
+  ['Taylor Stitch', 'Heavy flannel shirt', 'shirt', 'rust', 'M', 'Very good', 52, ''],
+  ['Alex Mill', 'Linen shirt', 'shirt', 'cream', 'M', 'Very good', 40, ''],
+  ['Vintage', 'Vintage camp collar shirt', 'shirt', 'rust', 'M', 'Good', 28, '70s print, loop collar'],
+  ['Rockmount', 'Pearl snap western shirt', 'shirt', 'tan', 'M', 'Very good', 45, 'Sawtooth pockets'],
+  ['Polo Ralph Lauren', 'Rugby shirt', 'polo', 'green', 'M', 'Good', 38, 'Heavy cotton'],
+  ['Buck Mason', 'Slub henley', 'tee', 'charcoal', 'M', 'Very good', 26, 'Long sleeve'],
+  ['Buck Mason', 'Heavyweight plain tee', 'tee', 'white', 'M', 'New with tags', 22, ''],
+  ['Flint and Tinder', 'Plain pocket tee', 'tee', 'navy', 'M', 'Very good', 16, ''],
+  ['Rhone', 'Performance polo', 'polo', 'black', 'M', 'Very good', 34, ''],
+  ['Faherty', 'Knit polo', 'polo', 'cream', 'M', 'Very good', 42, ''],
+  ['Vintage', 'Vintage band tee', 'tee', 'black', 'M', 'Satisfactory', 30, 'Faded, small hole at hem'],
+  ['Bonobos', 'Stretch washed chinos, slim', 'pants', 'olive', '29x28', 'Very good', 34, ''],
+  ['Bonobos', 'Stretch washed chinos, slim', 'pants', 'tan', '29x30', 'Very good', 30, ''],
+  ['Flint and Tinder', '365 pants, slim', 'pants', 'brown', '29x28', 'Good', 44, ''],
+  ['Rhone', 'Commuter pants, slim', 'pants', 'grey', '29', 'Very good', 52, ''],
+  ['Hiroshi Kato', 'The Pen slim selvedge jeans', 'pants', 'indigo', '32x32', 'Very good', 95, ''],
+  ['Hiroshi Kato', 'The Hammer straight selvedge jeans', 'pants', 'indigo', '29x28', 'Very good', 105, '14 oz, chain-stitched hem'],
+  ['Todd Snyder', 'Pleated wool trousers', 'pants', 'charcoal', '29x28', 'Very good', 76, ''],
+  ['Vintage', 'Vintage corduroy pants', 'pants', 'rust', '29x29', 'Good', 32, 'Wide wale, straight leg'],
+  ['Levi\'s', 'Vintage 501 jeans', 'pants', 'lightblue', '29x28', 'Good', 55, 'Light wash'],
+  ['Clarks', 'Desert boots, suede', 'boot', 'sand', '8.5', 'Very good', 58, 'Runs half a size large'],
+  ['Astorflex', 'Greenflex suede chukka boots', 'boot', 'brown', '41', 'Very good', 92, ''],
+  ['Thursday', 'Suede chukka boots', 'boot', 'brown', '8', 'Good', 70, ''],
+  ['Red Wing', 'Iron Ranger boots', 'boot', 'brown', '8.5', 'Good', 165, 'Runs large'],
+  ['Thursday', 'Leather chelsea boots', 'boot', 'black', '8.5', 'Very good', 85, ''],
+  ['Tecovas', 'Roper boots', 'boot', 'tan', '8.5', 'Good', 120, ''],
+  ['G.H. Bass', 'Weejuns penny loafers', 'loafer', 'burgundy', '8.5', 'Very good', 54, ''],
+  ['Astorflex', 'Suede derby shoes', 'loafer', 'tan', '41', 'Very good', 84, ''],
+  ['Oliver Cabell', 'Low 1 white leather sneakers', 'sneaker', 'white', '8.5', 'Very good', 78, ''],
+  ['Jordan', 'Air Jordan 1 Retro High', 'hightop', 'red', '8.5', 'Good', 130, ''],
+  ['Jordan', 'Air Jordan 4 Retro', 'hightop', 'grey', '9', 'Very good', 150, ''],
+  ['New Balance', '990v5 retro sneakers', 'sneaker', 'grey', '8.5', 'Good', 82, ''],
+  ['Common Projects', 'Achilles Low minimal sneakers', 'sneaker', 'white', '41', 'Good', 190, ''],
+  ['Salomon', 'XT-6 trail sneakers', 'sneaker', 'black', '8.5', 'Very good', 98, ''],
+  ['Goodfellow & Co', 'Slim chinos', 'pants', 'tan', '29x30', 'Good', 8, ''],
+  ['George', 'Dress shirt', 'shirt', 'blue', 'M', 'Good', 6, ''],
+  ['Original Use', 'Graphic tee', 'tee', 'black', 'M', 'Good', 5, ''],
+  ['Patagonia', 'Trucker hat', 'hat', 'navy', 'One size', 'Very good', 18, ''],
+];
+const KIND = { // kind -> sizing type, deck category, outfit slot order
+  tee: ['top', 'tops', 3], shirt: ['top', 'tops', 3], polo: ['top', 'tops', 3],
+  sweater: ['top', 'knits', 2], cardigan: ['top', 'knits', 2], vest: ['top', 'knits', 2],
+  overshirt: ['top', 'layers', 1], jacket: ['top', 'layers', 1], blazer: ['top', 'layers', 1], coat: ['top', 'layers', 1],
+  pants: ['pants', 'pants', 4], sneaker: ['shoes', 'shoes', 5], hightop: ['shoes', 'shoes', 5], boot: ['shoes', 'shoes', 5], loafer: ['shoes', 'shoes', 5],
+  hat: ['other', 'other', 0],
+};
+const CATALOG = RAW.map((r, i) => ({ id: 'v' + (i + 1), brand: r[0], title: r[1], kind: r[2], color: r[3], size: r[4], cond: r[5], price: r[6], note: r[7], type: KIND[r[2]][0] }));
+const byId = Object.fromEntries(CATALOG.map(x => [x.id, x]));
+const CATS = [['all', 'Everything'], ['layers', 'Layers'], ['knits', 'Knits'], ['tops', 'Shirts & tees'], ['pants', 'Pants'], ['shoes', 'Shoes']];
+
+const HEX = { black: '#232327', white: '#f4f2ec', grey: '#8e9299', charcoal: '#45484f', navy: '#1f2a48', indigo: '#2a3760', blue: '#4f79b8', lightblue: '#a9c4e4', olive: '#6b6f3a', green: '#2f6b45', brown: '#6f4a2f', tan: '#c2a070', sand: '#d5c3a0', cream: '#e9dfc6', rust: '#a8502c', burgundy: '#6e1f2c', red: '#c2302e' };
+const COLOR_NAMES = Object.keys(HEX);
+const COOL = ['black', 'white', 'grey', 'charcoal', 'navy', 'indigo', 'blue', 'lightblue'];
+
+// ------------------------------------------------------------------ state
+const KEY = 'cuff.v1';
+const DEFAULTS = {
+  rev: 0,
+  sizes: { waist: ['29'], length: ['28', '29'], tops: ['M'], shoes: ['8.5', '41'] },
+  brands: {
+    liked: ['Hiroshi Kato', 'Mizzen+Main', 'Rhone', 'Jordan', 'Oliver Cabell'],
+    blocked: ['Goodfellow & Co', 'Original Use', 'All in Motion', 'Mossimo', 'Merona', 'George', 'Time and Tru', 'No Boundaries', 'Athletic Works', 'Faded Glory'],
+    tooHigh: [],
+  },
+  votes: {}, stats: {}, outfits: [], curious: [],
+  closet: [
+    ['Hiroshi Kato selvedge jeans', 'pants', 'navy'], ['Black jeans', 'pants', 'black'], ['Dark indigo selvedge jeans', 'pants', 'indigo'],
+    ['Olive crewneck sweater', 'sweater', 'olive'], ['Rhone commuter shirt', 'shirt', 'blue'], ['Mizzen+Main trim dress shirt', 'shirt', 'white'],
+    ['White tee', 'tee', 'white'], ['Grey tee', 'tee', 'grey'], ['Black tee', 'tee', 'black'],
+    ['Air Jordan 1', 'hightop', 'black'], ['Oliver Cabell Low 1 sneakers', 'sneaker', 'white'], ['Trucker hat', 'hat', 'black'],
+  ].map((c, i) => ({ id: 'c' + (i + 1), name: c[0], kind: c[1], color: c[2] })),
+};
+const clone = o => JSON.parse(JSON.stringify(o));
+function hydrate(raw) {
+  const s = Object.assign(clone(DEFAULTS), raw || {});
+  s.sizes = Object.assign({}, DEFAULTS.sizes, raw && raw.sizes);
+  s.brands = Object.assign({}, clone(DEFAULTS.brands), raw && raw.brands);
+  return s;
+}
+let S, photos = {};
+try { S = hydrate(JSON.parse(localStorage.getItem(KEY) || 'null')); } catch (e) { S = hydrate(null); }
+try { photos = JSON.parse(localStorage.getItem(KEY + '.photos') || '{}'); } catch (e) { photos = {}; }
+
+// cloud copy: this person's private subtree, so likes and closet follow them across devices
+let cloudRef = null, cloudBusy = false, cloudDirty = false, cloudTimer = 0, storage = 'this device';
+async function cloudPush() {
+  if (!cloudRef) return;
+  if (cloudBusy) { cloudDirty = true; return; }
+  cloudBusy = true; cloudDirty = false;
+  try { await cloudRef.set(clone(S)); } catch (e) { /* keep working locally */ }
+  cloudBusy = false;
+  if (cloudDirty) cloudPush();
+}
+function save() {
+  S.rev = Date.now(); famCache = null;
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* storage unavailable */ }
+  clearTimeout(cloudTimer); cloudTimer = setTimeout(cloudPush, 1200);
+}
+function savePhoto(id, data) {
+  if (data) photos[id] = data; else delete photos[id];
+  try { localStorage.setItem(KEY + '.photos', JSON.stringify(photos)); } catch (e) { /* too large for this browser */ }
+  if (cloudRef) { const d = cloudRef.collection('photos').doc(id); (data ? d.set({ img: data }) : d.delete()).catch(() => {}); }
+}
+async function cloudInit() {
+  try {
+    if (!window.claude || !window.claude.use) return;
+    const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    if (!db || !user) return;
+    const uid = await user.id();
+    if (!uid) return;
+    const ref = db.doc('data/users/' + uid + '/state');
+    const snap = await ref.get();
+    cloudRef = ref; storage = 'your account';
+    if (snap.exists) {
+      const d = clone(snap.data());
+      if ((d.rev || 0) > (S.rev || 0)) { S = hydrate(d); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} famCache = null; queue = null; }
+      else if ((S.rev || 0) > (d.rev || 0)) cloudPush();
+    } else if (S.rev) cloudPush();
+    const ps = await ref.collection('photos').get();
+    ps.docs.forEach(p => { const d = p.data(); if (d && d.img) photos[p.id] = d.img; });
+    render();
+  } catch (e) { /* stay local */ }
+}
+
+// ------------------------------------------------------------------ taste model
+const norm = s => String(s || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '');
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const STYLE_KW = ['slim', 'trim', 'straight', 'relaxed', 'pleated', 'selvedge', 'corduroy', 'suede', 'leather', 'linen', 'wool', 'merino', 'cashmere', 'flannel', 'knit', 'cable', 'waxed', 'canvas', 'chambray', 'oxford', 'vintage', 'retro', 'performance', 'plain', 'graphic', 'western'];
+const brandIn = (list, brand, exact) => { const b = norm(brand); return !!b && list.some(x => { const n = norm(x); return n && (exact ? b === n : b.includes(n)); }); };
+const priceBucket = p => p == null ? null : p < 25 ? '<25' : p < 50 ? '25-50' : p < 100 ? '50-100' : p < 200 ? '100-200' : '200+';
+function features(it) {
+  const t = String(it.title || it.name || '').toLowerCase(), f = {};
+  if (it.brand) f.brand = ['brand:' + norm(it.brand)];
+  if (it.color) f.color = ['color:' + it.color];
+  f.style = STYLE_KW.filter(k => t.includes(k)).map(k => 'kw:' + k);
+  if (it.price != null) f.price = ['price:' + priceBucket(it.price)];
+  if (it.cond) f.condition = ['cond:' + norm(it.cond)];
+  f.kind = ['kind:' + it.kind];
+  if (it.size) f.size = ['size:' + it.type + ':' + norm(it.size)];
+  return f;
+}
+const stat = k => S.stats[k] || (S.stats[k] = { l: 0, d: 0 });
+const rejected = k => { const s = S.stats[k]; return !!s && s.d > s.l; };
+
+function sizeFits(it) {
+  const sz = String(it.size || ''), nums = sz.match(/\d+(\.\d+)?/g) || [];
+  const up = a => a.map(x => String(x).trim().toUpperCase()).filter(Boolean);
+  const letters = sz.toUpperCase().split(/[^A-Z0-9]+/).filter(t => /^(X{0,3}S|M|X{0,3}L)$/.test(t));
+  if (it.type === 'shoes') { const m = up(S.sizes.shoes); return nums.length && m.length ? nums.some(n => m.includes(String(parseFloat(n)))) : null; }
+  if (it.type === 'pants') {
+    const w = up(S.sizes.waist), l = up(S.sizes.length);
+    if (!nums.length || !w.length) return null;
+    if (!w.includes(String(parseFloat(nums[0])))) return false;
+    return !(nums.length > 1 && l.length && !l.includes(String(parseFloat(nums[1]))));
+  }
+  if (it.type === 'top') { const m = up(S.sizes.tops); return letters.length && m.length ? letters.some(x => m.includes(x)) : null; }
+  return null;
+}
+function hiddenWhy(it) {
+  if (brandIn(S.brands.blocked, it.brand, true)) return 'blocked brand';
+  if (brandIn(S.brands.tooHigh, it.brand, true)) return 'too high end';
+  if (sizeFits(it) === false) return 'wrong size';
+  return '';
+}
+
+// what you own + what you liked
+let famCache = null;
+function fam() {
+  if (famCache) return famCache;
+  const own = {}, like = {}, texts = [], combos = {};
+  S.closet.forEach(c => {
+    const it = { title: c.name, kind: c.kind, color: c.color, type: KIND[c.kind][0] };
+    texts.push(c.name.toLowerCase());
+    Object.values(features(it)).flat().forEach(k => { own[k] = (own[k] || 0) + 1; });
+    const ck = c.color + '|' + KIND[c.kind][1]; combos[ck] = (combos[ck] || 0) + 1;
+  });
+  const prices = [];
+  Object.keys(S.votes).forEach(id => {
+    const it = byId[id];
+    if (!it || S.votes[id].v <= 0) return;
+    texts.push((it.brand + ' ' + it.title).toLowerCase()); prices.push(it.price);
+    Object.values(features(it)).flat().forEach(k => { like[k] = (like[k] || 0) + 1; });
+  });
+  prices.sort((a, b) => a - b);
+  return (famCache = { own, like, texts, combos, prices, total: texts.length, n: k => (own[k] || 0) + (like[k] || 0) });
+}
+const STYLES = [
+  { id: 'street', name: 'Sneaker casual', re: /jordan|dunk|retro|hoodie|graphic|cargo|sneaker|bomber|trucker hat/, next: ['heritage', 'minimal'], how: 'Statement sneakers carry the outfit; everything else stays relaxed.', tries: ['bomber jacket', 'heavyweight hoodie', 'retro sneakers'] },
+  { id: 'heritage', name: 'Heritage / workwear', re: /selvedge|hiroshi kato|chore|flannel|chambray|henley|boots?\b|chukka|red wing|overshirt|corduroy|waxed|canvas/, next: ['smart', 'western'], how: 'Built around good denim. Add texture and a layer on top: overshirts, flannel, boots.', tries: ['chore jacket', 'corduroy overshirt', 'suede chukka boots'] },
+  { id: 'perf', name: 'Performance smart casual', re: /rhone|mizzen|commuter|performance|quarter zip/, next: ['smart', 'minimal'], how: 'Clean, comfortable, office-ready pieces in technical fabric.', tries: ['commuter pants', 'performance polo', 'quarter zip'] },
+  { id: 'smart', name: 'Smart casual', re: /oxford|chino|polo|loafer|merino|cashmere|crewneck|sweater|cardigan|linen|derby/, next: ['tailor', 'prep'], how: 'The same jeans and sneakers, with a collar and a knit layered on top.', tries: ['merino crewneck sweater', 'oxford button down shirt', 'knit polo'] },
+  { id: 'minimal', name: 'Minimalist', re: /oliver cabell|common projects|low 1|plain|minimal|white tee|grey tee|black tee/, next: ['smart', 'rock'], how: 'Few colors, no logos, everything fitted well. Quality does the talking.', tries: ['white leather sneakers', 'plain heavyweight tee', 'black slim jeans'] },
+  { id: 'tailor', name: 'Tailoring', re: /blazer|sport coat|trousers|pleat|topcoat|suit\b/, next: ['smart'], how: 'Start with a soft, unstructured blazer over jeans you already own before a full suit.', tries: ['unstructured blazer', 'wool trousers', 'wool topcoat'] },
+  { id: 'vintage', name: 'Vintage eclectic / 70s', re: /vintage|70s|camp collar|paisley|patchwork|flare/, next: ['western', 'heritage'], how: 'Pieces from different eras that share a color or texture. One loud piece at a time.', tries: ['vintage camp collar shirt', '70s suede jacket', 'vintage corduroy pants'] },
+  { id: 'western', name: 'Western / Americana', re: /western|pearl snap|trucker jacket|roper|levi|sawtooth/, next: ['heritage', 'vintage'], how: 'Denim on denim, pearl snaps and worn-in leather, grounded by your selvedge.', tries: ['pearl snap western shirt', 'vintage trucker jacket', 'roper boots'] },
+  { id: 'prep', name: 'Prep / Ivy', re: /rugby|cable knit|penny loafer|ralph lauren|brooks brothers|weejuns/, next: ['smart', 'tailor'], how: 'Collegiate classics worn a little loose: rugby shirts, cable knits, loafers with jeans.', tries: ['rugby shirt', 'cable knit sweater', 'penny loafers'] },
+  { id: 'outdoor', name: 'Outdoor / gorpcore', re: /fleece|patagonia|trail|salomon|shell/, next: ['street', 'heritage'], how: 'Technical outdoor gear worn in town: fleece and trail shoes with regular jeans.', tries: ['patagonia fleece', 'shell jacket', 'trail sneakers'] },
+  { id: 'rock', name: 'Rock / moto', re: /moto|leather jacket|chelsea|band tee/, next: ['minimal', 'vintage'], how: 'Dark, slim and a bit worn: black denim, a leather jacket, boots.', tries: ['leather moto jacket', 'black chelsea boots', 'vintage band tee'] },
+];
+function styleMix() {
+  const F = fam();
+  if (F.mix) return F.mix;
+  const rows = STYLES.map(st => ({ st, n: F.texts.filter(t => st.re.test(t)).length }));
+  const sum = rows.reduce((a, r) => a + r.n, 0) || 1;
+  rows.forEach(r => { r.share = r.n / sum; });
+  rows.sort((a, b) => b.n - a.n);
+  const home = rows.filter((r, i) => r.n && (i === 0 || r.share >= 0.2)).map(r => r.st);
+  const next = S.curious.map(id => STYLES.find(x => x.id === id)).filter(st => st && !home.includes(st));
+  home.forEach(h => h.next.forEach(id => { const st = STYLES.find(x => x.id === id); if (!home.includes(st) && !next.includes(st)) next.push(st); }));
+  return (F.mix = { rows: rows.filter(r => r.n), home, next });
+}
+const ESSENTIALS = [
+  [1, 'A second layer: overshirt or chore jacket', 'overshirt', /overshirt|chore|trucker jacket|bomber/],
+  [1, 'Brown suede boots', 'suede chukka boots', /boots?\b|chukka/],
+  [1, 'Oxford button-down', 'oxford button down shirt', /oxford/],
+  [1, 'Chinos in olive or tan', 'chinos', /chino|365 pant/],
+  [1, 'A second sweater in a warm color', 'merino crewneck sweater', /sweater.*(cream|burgundy|red|rust)|(cream|burgundy|red|rust).*sweater|merino|cashmere|cable/],
+  [2, 'Unstructured blazer', 'unstructured blazer', /blazer|sport coat/],
+  [2, 'Knit polo', 'knit polo', /knit polo|sweater polo/],
+  [2, 'Loafers', 'penny loafers', /loafer|weejuns/],
+  [2, 'Wool overcoat', 'wool topcoat', /topcoat|overcoat/],
+  [2, 'Pleated or relaxed trousers', 'pleated trousers', /pleat|trousers/],
+];
+const gaps = () => { const t = fam().texts; return ESSENTIALS.filter(e => !t.some(x => e[3].test(x))); };
+const TEXTURES = ['corduroy', 'suede', 'wool', 'flannel', 'cable', 'waxed', 'linen', 'cashmere'];
+
+/** everything the app has to say about one listing */
+function read(it) {
+  const F = fam(), f = features(it), text = (it.brand + ' ' + it.title).toLowerCase();
+  let score = 0; const good = [], stretch = [], warn = [];
+  Object.keys(f).forEach(g => (f[g] || []).forEach(k => { const st = S.stats[k]; if (st) score += Math.log((st.l + 1) / (st.d + 1)) * (g === 'brand' ? 1.5 : 1); }));
+  if (brandIn(S.brands.liked, it.brand)) { score += 2; good.push('Brand you like'); }
+  else { const st = S.stats['brand:' + norm(it.brand)]; if (st && st.l > st.d) good.push('You liked ' + it.brand); }
+  (f.style || []).forEach(k => { const st = S.stats[k]; if (st && st.l >= 2 && st.l > st.d) good.push('You like ' + k.slice(3)); });
+  if (sizeFits(it) === true) good.push('Your size');
+  const plenty = F.combos[it.color + '|' + KIND[it.kind][1]] || 0;
+  if (plenty >= 3) { score -= 1; warn.push('You own ' + plenty + ' ' + it.color + ' ' + KIND[it.kind][1]); }
+  // stretch: widens the wardrobe without ignoring what was rejected
+  const ck = 'color:' + it.color;
+  if (!COOL.includes(it.color) && !F.own[ck] && !rejected(ck)) stretch.push('New color: ' + it.color);
+  else if (!COOL.includes(it.color) && (F.own[ck] || 0) <= 1 && !rejected(ck)) stretch.push('Warm tone');
+  (f.style || []).forEach(k => { const w = k.slice(3); if (TEXTURES.includes(w) && !F.own[k] && !rejected(k)) stretch.push('New texture: ' + w); });
+  const mix = styleMix(), hit = mix.next.find(st => st.re.test(text));
+  if (hit && !mix.home.some(st => st.re.test(text))) stretch.push('Toward ' + hit.name.toLowerCase());
+  const g = gaps().find(e => e[3].test(text + ' ' + it.color));
+  if (g) stretch.push('Fills a gap');
+  const quality = it.price >= 20;
+  const s2 = quality ? stretch : [];
+  return { score, good, warn, stretch: s2, gap: g, pct: Math.max(35, Math.min(99, Math.round(62 + score * 7 + s2.length * 3))) };
+}
+
+function applyVote(it, v, reasons, undo) {
+  const sign = undo ? -1 : 1, f = features(it);
+  if (v > 0) Object.values(f).flat().forEach(k => { stat(k).l = Math.max(0, stat(k).l + sign); });
+  else (reasons || []).forEach(r => (f[r] || []).forEach(k => { stat(k).d = Math.max(0, stat(k).d + sign); }));
+}
+function vote(id, v, reasons) {
+  const it = byId[id], prev = S.votes[id];
+  if (prev) applyVote(it, prev.v, prev.reasons, true);
+  S.votes[id] = { v, reasons: reasons || [], ts: Date.now() };
+  applyVote(it, v, reasons);
+  let msg = '';
+  if (v < 0 && (reasons || []).includes('brand')) {
+    const st = stat('brand:' + norm(it.brand));
+    if (st.d >= 2 && st.l === 0 && !brandIn(S.brands.liked, it.brand) && !brandIn(S.brands.blocked, it.brand, true)) { S.brands.blocked.push(it.brand); msg = it.brand + ' is now blocked'; }
+  }
+  save();
+  return msg;
+}
+function unvote(id) {
+  const prev = S.votes[id];
+  if (!prev) return;
+  applyVote(byId[id], prev.v, prev.reasons, true);
+  delete S.votes[id]; save();
+}
+
+// ------------------------------------------------------------------ garment drawings
+function shade(hex, a) {
+  const n = parseInt(hex.slice(1), 16), c = [n >> 16, (n >> 8) & 255, n & 255].map(v => Math.max(0, Math.min(255, Math.round(v + a * 255))));
+  return 'rgb(' + c.join(',') + ')';
+}
+const LONG = 'M72 36 L48 46 L20 150 L44 158 L60 96 L60 174 L140 174 L140 96 L156 158 L180 150 L152 46 L128 36 Q100 54 72 36Z';
+const SHORT = 'M70 40 L50 48 L22 78 L42 98 L58 84 L58 170 L142 170 L142 84 L158 98 L178 78 L150 48 L130 40 Q100 58 70 40Z';
+function art(kind, color, title) {
+  const fill = HEX[color] || '#888', lum = parseInt(fill.slice(1, 3), 16) + parseInt(fill.slice(3, 5), 16) + parseInt(fill.slice(5, 7), 16);
+  const ln = shade(fill, lum > 420 ? -0.28 : 0.2), dk = shade(fill, -0.12), t = String(title || '').toLowerCase();
+  const P = (d, extra) => '<path d="' + d + '" fill="' + fill + '" stroke="' + ln + '" stroke-width="2.5" stroke-linejoin="round" ' + (extra || '') + '/>';
+  const L = d => '<path d="' + d + '" fill="none" stroke="' + ln + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+  const collar = '<path d="M72 36 L100 62 L82 74Z M128 36 L100 62 L118 74Z" fill="' + dk + '" stroke="' + ln + '" stroke-width="2" stroke-linejoin="round"/>';
+  const buttons = ys => ys.map(y => '<circle cx="100" cy="' + y + '" r="2.4" fill="' + ln + '"/>').join('');
+  let tex = '';
+  if (/corduroy|cable|knit|merino|cashmere|sweater|cardigan|fleece/.test(t + ' ' + kind) && kind !== 'pants')
+    tex = '<g stroke="' + ln + '" stroke-width="1" opacity=".35">' + [68, 76, 84, 92, 108, 116, 124, 132].map(x => '<path d="M' + x + ' 70 V170"/>').join('') + '</g>';
+  let s = '';
+  if (kind === 'tee') s = P(SHORT) + L('M78 43 Q100 62 122 43');
+  else if (kind === 'polo') s = P(SHORT) + collar.replace(/36/g, '40') + L('M100 62 V96') + buttons([74, 88]);
+  else if (kind === 'shirt') s = P(LONG) + collar + L('M100 62 V174') + buttons([84, 106, 128, 150]);
+  else if (kind === 'sweater') s = P(LONG) + tex + L('M76 40 Q100 62 124 40') + L('M60 164 H140 M22 142 L46 150 M178 142 L154 150');
+  else if (kind === 'cardigan') s = P(LONG) + tex + L('M78 38 L100 96 L122 38 M100 96 V174') + buttons([112, 132, 152]);
+  else if (kind === 'vest') s = P('M72 36 L54 52 L60 174 L140 174 L146 52 L128 36 L100 84Z') + tex + L('M60 164 H140');
+  else if (kind === 'overshirt') s = P(LONG) + tex + collar + L('M100 62 V174 M68 92 H90 V114 H68Z M110 92 H132 V114 H110Z') + buttons([84, 110, 136, 160]);
+  else if (kind === 'jacket') s = P(LONG) + tex + collar + L('M100 62 V174 M66 128 H92 V156 H66Z M108 128 H134 V156 H108Z M60 166 H140') + buttons([84, 106]);
+  else if (kind === 'blazer') s = P(LONG) + L('M76 38 L100 118 L124 38 M84 66 L74 80 M116 66 L126 80 M100 118 V174 M66 138 H88 M112 138 H134') + buttons([128]);
+  else if (kind === 'coat') s = P('M72 30 L48 40 L22 140 L44 148 L58 92 L54 192 L146 192 L142 92 L156 148 L178 140 L152 40 L128 30 Q100 46 72 30Z') + L('M76 32 L100 104 L124 32 M100 104 V192 M62 142 H86 M114 142 H138') + buttons([120, 146]);
+  else if (kind === 'pants') s = P('M62 22 L138 22 L152 182 L112 182 L100 72 L88 182 L48 182Z') + L('M62 34 H138 M100 34 V72 M70 40 Q72 54 62 58 M130 40 Q128 54 138 58') +
+    (/selvedge|jeans/.test(t) ? '<path d="M49 170 L88.6 170 L88 182 L48 182Z M111.4 170 L151 170 L152 182 L112 182Z" fill="#f1ebdd" stroke="' + ln + '" stroke-width="1.5"/><path d="M84 171 V181 M116 171 V181" stroke="#c9382c" stroke-width="2"/>' : '');
+  else if (kind === 'sneaker') s = P('M20 134 Q22 106 50 102 L90 98 Q106 120 150 126 Q184 130 184 148 L184 152 L20 152Z') + L('M96 106 L84 118 M106 112 L94 124 M116 117 L104 129 M40 104 Q52 128 30 150') + '<path d="M18 150 H186 V160 Q186 166 180 166 H24 Q18 166 18 160Z" fill="#f4f2ec" stroke="' + ln + '" stroke-width="2"/>';
+  else if (kind === 'hightop') s = P('M34 58 L86 54 L94 102 Q110 122 150 128 Q184 132 184 148 L184 152 L22 152 L26 110Z') + L('M88 70 L76 80 M92 86 L80 96 M98 102 L86 112 M110 114 L98 126 M34 76 H82') + '<path d="M20 150 H186 V160 Q186 166 180 166 H26 Q20 166 20 160Z" fill="#f4f2ec" stroke="' + ln + '" stroke-width="2"/>';
+  else if (kind === 'boot') s = P('M36 52 L88 50 L94 104 Q110 122 150 128 Q184 132 184 148 L184 152 L24 152 L28 108Z') + L('M90 74 L78 82 M94 92 L82 100 M36 66 H86') + '<path d="M22 152 H186 V160 H70 V168 H22Z" fill="' + shade(fill, -0.3) + '" stroke="' + ln + '" stroke-width="2"/>';
+  else if (kind === 'loafer') s = P('M22 138 Q24 116 58 112 L98 110 Q122 128 158 132 Q184 136 184 148 L184 152 L22 152Z') + L('M92 112 Q100 128 124 130 M100 116 L112 126') + '<path d="M20 152 H186 V158 H56 V164 H20Z" fill="' + shade(fill, -0.3) + '" stroke="' + ln + '" stroke-width="2"/>';
+  else if (kind === 'hat') s = P('M42 122 Q40 58 100 58 Q160 58 158 122Z') + P('M42 122 Q18 124 12 142 Q60 130 104 132 L158 122Z') + L('M100 58 V122 M70 66 Q62 92 64 122') + '<circle cx="100" cy="58" r="4" fill="' + ln + '"/>';
+  return '<svg viewBox="0 0 200 200" role="img" aria-label="' + esc(color + ' ' + kind) + '">' + s + '</svg>';
+}
+const pic = (kind, color, title, photoId) => photos[photoId] ? '<img src="' + esc(photos[photoId]) + '" alt="">' : art(kind, color, title);
+
+// ------------------------------------------------------------------ deck
+let tab = 'discover', mode = 'you', cat = 'all', queue = null, history = [], flipped = false;
+function candidates() {
+  let hidden = 0;
+  const list = CATALOG.filter(it => {
+    if (S.votes[it.id]) return false;
+    if (hiddenWhy(it)) { hidden++; return false; }
+    return cat === 'all' || KIND[it.kind][1] === cat;
+  }).map(it => [read(it), it]);
+  return { hidden, list };
+}
+function rank(pairs) {
+  if (mode === 'stretch') return pairs.filter(p => p[0].stretch.length).sort((a, b) => (b[0].stretch.length * 2 + b[0].score) - (a[0].stretch.length * 2 + a[0].score)).map(p => p[1].id);
+  const safe = pairs.filter(p => !p[0].stretch.length).sort((a, b) => b[0].score - a[0].score);
+  const str = pairs.filter(p => p[0].stretch.length).sort((a, b) => b[0].score - a[0].score);
+  const out = [];
+  while (safe.length || str.length) { // two familiar picks, then one that stretches
+    for (let i = 0; i < 2 && safe.length; i++) out.push(safe.shift()[1].id);
+    if (str.length) out.push(str.shift()[1].id);
+  }
+  return out;
+}
+function buildQueue(keepTop) {
+  const ids = rank(candidates().list);
+  queue = keepTop && ids.includes(keepTop) ? [keepTop].concat(ids.filter(i => i !== keepTop)) : ids;
+}
+function cardHTML(it, under) {
+  const r = read(it);
+  const chips = r.stretch.map(x => '<span class="s">' + esc(x) + '</span>').concat(r.good.map(x => '<span class="g">' + esc(x) + '</span>'), r.warn.map(x => '<span>' + esc(x) + '</span>')).slice(0, 5).join('');
+  const slot = KIND[it.kind][2];
+  const mates = S.closet.filter(c => KIND[c.kind][2] !== slot && KIND[c.kind][2] > 0 && goes(it.color, c.color))
+    .sort((a, b) => KIND[a.kind][2] - KIND[b.kind][2]).slice(0, 6);
+  return '<article class="card' + (under ? ' under' : '') + '" data-id="' + it.id + '">' +
+    '<div class="stamp l">Like</div><div class="stamp p">Pass</div><div class="stamp o">Add to outfit</div>' +
+    '<div class="match">' + r.pct + '%<small>MATCH</small></div>' +
+    '<div class="art">' + art(it.kind, it.color, it.title) + '</div>' +
+    '<div class="info"><div class="brand">' + esc(it.brand) + '<span>$' + it.price + '</span></div>' +
+    '<div class="title">' + esc(it.title) + '</div>' +
+    '<div class="meta">' + esc(it.size + ' · ' + it.cond + ' · ' + it.color) + '</div><div class="why">' + chips + '</div></div>' +
+    '<div class="back"><h3>' + esc(it.brand + ' ' + it.title) + '</h3>' +
+    '<dl><dt>Size</dt><dd>' + esc(it.size) + '</dd><dt>Condition</dt><dd>' + esc(it.cond) + '</dd><dt>Color</dt><dd>' + esc(it.color) + '</dd><dt>Price</dt><dd>$' + it.price + '</dd>' + (it.note ? '<dt>Notes</dt><dd>' + esc(it.note) + '</dd>' : '') + '</dl>' +
+    '<h4>Why you’re seeing this</h4><div class="why">' + (chips || '<span>Fits your filters</span>') + '</div>' +
+    (r.gap ? '<p style="margin-top:8px">Fills a gap in your wardrobe: ' + esc(r.gap[1].toLowerCase()) + '.</p>' : '') +
+    (mates.length ? '<h4>Wear it with what you own</h4><div class="pair">' + mates.map(c => '<div>' + pic(c.kind, c.color, c.name, c.id) + esc(c.name) + '</div>').join('') + '</div>' : '') +
+    '<p style="margin-top:14px;color:#5a5f70;font-size:12.5px">Tap to flip back.</p></div></article>';
+}
+const NEUTRAL = ['black', 'white', 'grey', 'charcoal', 'navy', 'indigo', 'cream', 'tan', 'sand'];
+const goes = (a, b) => a !== b ? (NEUTRAL.includes(a) || NEUTRAL.includes(b)) : ['indigo', 'white', 'black'].includes(a) === false ? false : a !== 'black';
+
+function viewDiscover() {
+  if (!queue) buildQueue();
+  const c = candidates();
+  const top = byId[queue[0]], nxt = byId[queue[1]];
+  const head = '<div class="note"><b>Sample listings</b> not connected to Vinted yet · ' + c.hidden + ' hidden by your size and brand filters</div>' +
+    '<div class="cats">' + CATS.map(x => '<button class="chip" data-act="cat" data-v="' + x[0] + '" aria-pressed="' + (cat === x[0]) + '">' + x[1] + '</button>').join('') + '</div>';
+  if (!top) {
+    return head + '<div class="empty"><h2>' + (mode === 'stretch' ? 'No stretch picks left here' : 'You’ve seen everything here') + '</h2><p>' +
+      (cat !== 'all' ? 'Try another category, or ' : '') + 'bring back the ones you passed on to go again.</p><div class="row" style="justify-content:center">' +
+      (cat !== 'all' ? '<button class="btn" data-act="cat" data-v="all">Show everything</button>' : '') + '<button class="btn ghost" data-act="repass">Bring back passes</button></div></div>';
+  }
+  return head + '<div class="deck" id="deck">' + (nxt ? cardHTML(nxt, true) : '') + cardHTML(top) + '</div>' +
+    '<div class="actions"><button class="act sm" data-act="undo" aria-label="Undo last swipe"' + (history.length ? '' : ' disabled style="opacity:.35"') + '>↺</button>' +
+    '<button class="act no" data-act="pass" aria-label="Pass">✕</button><button class="act sm" data-act="up" aria-label="Like and add to an outfit">＋</button>' +
+    '<button class="act yes" data-act="like" aria-label="Like">♥</button><button class="act sm" data-act="flip" aria-label="Details">i</button></div>';
+}
+
+function decide(dir) {
+  const id = queue && queue[0];
+  if (!id) return;
+  const el = document.querySelector('#deck .card:not(.under)');
+  const done = () => {
+    history.push(id); flipped = false;
+    const msg = vote(id, dir === 'left' ? -1 : 1, []);
+    queue.shift(); buildQueue(queue[0]);
+    render();
+    if (dir === 'left') whyBar(id); else { closeWhy(); toast(msg || 'Liked'); }
+    if (dir === 'up') pickOutfit({ k: 'shop', id });
+  };
+  if (!el) return done();
+  el.classList.add('fly');
+  el.style.transform = dir === 'left' ? 'translate(-140%, 30px) rotate(-22deg)' : dir === 'right' ? 'translate(140%, 30px) rotate(22deg)' : 'translate(0, -130%)';
+  el.style.opacity = '0';
+  setTimeout(done, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 240);
+}
+function bindSwipe() {
+  const el = document.querySelector('#deck .card:not(.under)');
+  if (!el) return;
+  if (flipped) el.classList.add('flipped');
+  let sx = 0, sy = 0, dx = 0, dy = 0, down = false, moved = false;
+  const stamps = el.querySelectorAll('.stamp');
+  el.addEventListener('pointerdown', e => { down = true; moved = false; sx = e.clientX; sy = e.clientY; dx = dy = 0; el.classList.remove('snap'); el.setPointerCapture(e.pointerId); });
+  el.addEventListener('pointermove', e => {
+    if (!down) return;
+    dx = e.clientX - sx; dy = e.clientY - sy;
+    if (Math.abs(dx) + Math.abs(dy) > 8) moved = true;
+    if (flipped || !moved) return;
+    el.style.transform = 'translate(' + dx + 'px,' + dy + 'px) rotate(' + dx / 18 + 'deg)';
+    const up = dy < -60 && Math.abs(dx) < 70;
+    stamps[0].style.opacity = up ? 0 : Math.max(0, Math.min(1, dx / 90));
+    stamps[1].style.opacity = up ? 0 : Math.max(0, Math.min(1, -dx / 90));
+    stamps[2].style.opacity = up ? Math.min(1, (-dy - 60) / 60) : 0;
+  });
+  const end = () => {
+    if (!down) return; down = false;
+    if (!moved) { flipped = !flipped; el.classList.toggle('flipped', flipped); return; }
+    if (flipped) return;
+    if (dy < -120 && Math.abs(dx) < 70) return decide('up');
+    if (dx > 95) return decide('right');
+    if (dx < -95) return decide('left');
+    el.classList.add('snap'); el.style.transform = ''; stamps.forEach(s => { s.style.opacity = 0; });
+  };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
+}
+
+// "why not" bar: optional, never blocks the next swipe
+const REASONS = [['condition', 'Looks worn'], ['color', 'Color'], ['style', 'Style or fabric'], ['kind', 'Type of item'], ['size', 'Size'], ['price', 'Price'], ['brand', 'The brand']];
+let whyEl = null, whyTimer = 0;
+function closeWhy() { clearTimeout(whyTimer); if (whyEl) { whyEl.remove(); whyEl = null; } }
+function whyBar(id) {
+  closeWhy();
+  const it = byId[id], picked = new Set();
+  whyEl = document.createElement('div'); whyEl.className = 'why-bar';
+  whyEl.innerHTML = '<p>Passed on ' + esc(it.brand) + '. Why? <button data-x>Just this one</button></p><div class="wrap">' +
+    REASONS.map(r => '<button class="chip" data-r="' + r[0] + '">' + r[1] + '</button>').join('') + '</div>';
+  whyEl.addEventListener('click', e => {
+    if (e.target.closest('[data-x]')) return closeWhy();
+    const b = e.target.closest('[data-r]'); if (!b) return;
+    const r = b.dataset.r;
+    picked.has(r) ? picked.delete(r) : picked.add(r);
+    b.classList.toggle('on', picked.has(r));
+    const msg = vote(id, -1, Array.from(picked));
+    if (msg) toast(msg);
+    clearTimeout(whyTimer); whyTimer = setTimeout(() => { closeWhy(); buildQueue(queue && queue[0]); render(); }, 2600);
+  });
+  document.getElementById('app').appendChild(whyEl);
+  whyTimer = setTimeout(closeWhy, 7000);
+}
+
+// ------------------------------------------------------------------ other views
+const closetItem = c => ({ id: c.id, brand: 'Yours', title: c.name, kind: c.kind, color: c.color });
+function tile(o, opts) {
+  opts = opts || {};
+  return '<div class="tile"><div class="pic">' + pic(o.kind, o.color, o.title, o.id) + '</div><div class="t"><b>' + esc(o.brand) + (o.price != null ? ' · $' + o.price : '') + '</b>' + esc(o.title) +
+    (o.size ? '<br><span style="color:#5a5f70">' + esc(o.size) + '</span>' : '') + '</div>' +
+    (opts.plus ? '<button class="plus" data-act="outfit-add" data-k="' + opts.plus + '" data-id="' + o.id + '">＋ Outfit</button>' : '') +
+    (opts.x ? '<button class="x" data-act="' + opts.x + '" data-id="' + o.id + '"' + (opts.o ? ' data-o="' + opts.o + '"' : '') + ' aria-label="Remove">✕</button>' : '') + '</div>';
+}
+function viewLikes() {
+  const ids = Object.keys(S.votes).filter(id => S.votes[id].v > 0 && byId[id]).sort((a, b) => S.votes[b].ts - S.votes[a].ts);
+  const total = ids.reduce((a, id) => a + byId[id].price, 0);
+  if (!ids.length) return '<div class="empty"><h2>Nothing liked yet</h2><p>Swipe right on Discover and your picks collect here, ready to drop into outfits.</p><button class="btn" data-act="tab" data-v="discover">Start swiping</button></div>';
+  return '<div class="scroll"><h2 class="sec">Liked</h2><p class="sub">' + ids.length + ' pieces · $' + total + ' if you bought them all</p><div class="grid">' +
+    ids.map(id => tile(byId[id], { plus: 'shop', x: 'unlike' })).join('') + '</div></div>';
+}
+function viewCloset() {
+  return '<div class="scroll"><h2 class="sec">Your closet</h2><p class="sub">What you already own. Your style profile and outfit pairings are built from this, so keep it close to what you really wear. It starts with the pieces you told me about.</p>' +
+    '<button class="btn" data-act="closet-new">＋ Add a piece</button><div class="grid" style="margin-top:14px">' +
+    S.closet.map(c => tile(closetItem(c), { plus: 'own', x: 'closet-del' })).join('') + '</div></div>';
+}
+function piece(p) { if (p.k === 'own') { const c = S.closet.find(x => x.id === p.id); return c && closetItem(c); } return byId[p.id]; }
+function viewOutfits() {
+  let h = '<div class="scroll"><h2 class="sec">Outfits</h2><p class="sub">Combine what you own with what you’ve liked. Swipe a card up on Discover to send it straight here.</p><button class="btn" data-act="outfit-new">＋ New outfit</button><div style="margin-top:14px">';
+  if (!S.outfits.length) h += '<p class="sub">No outfits yet. A first one to try: olive sweater, white tee, dark indigo selvedge with one cuff, white sneakers.</p>';
+  S.outfits.forEach(o => {
+    const ps = o.pieces.map(p => [p, piece(p)]).filter(x => x[1]).sort((a, b) => KIND[a[1].kind][2] - KIND[b[1].kind][2]);
+    const buy = ps.filter(x => x[0].k === 'shop').reduce((a, x) => a + x[1].price, 0);
+    h += '<div class="outfit"><div class="row"><h3 style="flex:1">' + esc(o.name) + '</h3><span style="color:var(--muted);font-size:13px">' + (buy ? '$' + buy + ' to buy' : 'all yours') + '</span></div>' +
+      '<div class="look">' + (ps.map(x => tile(x[1], { x: 'outfit-rm', o: o.id + '|' + x[0].k })).join('') || '<p class="sub" style="margin:0">Empty. Add pieces below.</p>') + '</div>' +
+      '<div class="row"><button class="btn ghost" data-act="outfit-pick" data-id="' + o.id + '">＋ Add a piece</button><button class="btn ghost" data-act="outfit-del" data-id="' + o.id + '">Delete</button></div></div>';
+  });
+  return h + '</div></div>';
+}
+const vinted = (label, q) => '<a class="chip" target="_blank" rel="noopener" href="https://www.vinted.com/catalog?search_text=' + encodeURIComponent(q) + '&order=newest_first">' + esc(label) + ' ↗</a>';
+function viewStyle() {
+  const F = fam(), mix = styleMix();
+  const cols = Object.keys(Object.assign({}, F.own, F.like)).filter(k => k.startsWith('color:')).map(k => [F.n(k), k.slice(6)]).sort((a, b) => b[0] - a[0]);
+  const coolShare = cols.filter(c => COOL.includes(c[1])).reduce((a, c) => a + c[0], 0) / (cols.reduce((a, c) => a + c[0], 0) || 1);
+  const plenty = Object.entries(F.combos).filter(e => e[1] >= 3);
+  const layers = S.closet.filter(c => KIND[c.kind][1] === 'layers').length;
+  let h = '<div class="scroll"><h2 class="sec">The style you wear</h2><p class="sub">' + esc(mix.home.map(x => x.name).join(' + ') || 'Add a few closet pieces to see this') + '. Built from ' + S.closet.length + ' pieces you own and ' + (F.total - S.closet.length) + ' likes.</p>';
+  h += mix.rows.map(r => '<div class="bar"><div>' + esc(r.st.name) + '</div><i><b style="width:' + Math.round(r.share * 100) + '%"></b></i><span>' + Math.round(r.share * 100) + '%</span></div>').join('');
+  h += '<h2 class="sec">Your colors</h2><p class="sub">' + Math.round(coolShare * 100) + '% of what you own and like is black, white, grey or blue.' + (coolShare > 0.75 ? ' One warm tone per outfit is the quickest lift: olive, brown, tan, cream, rust or burgundy.' : '') + '</p><div class="wrap">' +
+    cols.map(c => '<span class="chip sw"><i style="background:' + HEX[c[1]] + '"></i>' + esc(c[1]) + ' <small>' + c[0] + '</small></span>').join('') + '</div>';
+  if (plenty.length || !layers) {
+    h += '<h2 class="sec">What the closet says</h2><div class="wrap">' + plenty.map(e => '<span class="chip">Plenty of ' + esc(e[0].replace('|', ' ')) + ' <small>×' + e[1] + '</small></span>').join('') +
+      (!layers ? '<span class="chip">No second layer yet</span>' : '') + '</div>';
+  }
+  const g = gaps();
+  [[1, 'Missing foundations'], [2, 'Next-level pieces']].forEach(x => {
+    const rows = g.filter(e => e[0] === x[0]);
+    if (rows.length) h += '<h2 class="sec">' + x[1] + '</h2><p class="sub">Not in your closet or likes. Each opens the newest Vinted listings.</p><div class="wrap">' + rows.map(e => vinted(e[1], e[2])).join('') + '</div>';
+  });
+  h += '<h2 class="sec">Where to take it next</h2><p class="sub">Styles that sit next to yours. The Stretch deck leans toward these.</p>';
+  h += mix.next.slice(0, 5).map(st => '<div class="next"><h3>' + esc(st.name) + '</h3><p>' + esc(st.how) + '</p><div class="wrap">' + st.tries.map(q => vinted(q, q)).join('') + '</div></div>').join('');
+  h += '<h2 class="sec">Curious about</h2><p class="sub">Tap a style to pull it into your expansions and the Stretch deck.</p><div class="wrap">' +
+    STYLES.filter(x => !mix.home.includes(x)).map(x => '<button class="chip' + (S.curious.includes(x.id) ? ' on' : '') + '" data-act="curious" data-v="' + x.id + '">' + (S.curious.includes(x.id) ? '✓ ' : '') + esc(x.name) + '</button>').join('') + '</div>';
+  const learned = Object.entries(S.stats).filter(e => e[1].l + e[1].d > 0).map(e => [Math.log((e[1].l + 1) / (e[1].d + 1)), e[0], e[1]]).sort((a, b) => b[0] - a[0]);
+  if (learned.length) h += '<h2 class="sec">Learned from your swipes</h2><div class="wrap">' + learned.slice(0, 8).concat(learned.length > 12 ? learned.slice(-4) : []).map(r => '<span class="chip">' + esc(r[1].split(':').slice(1).join(' ')) + ' <small>♥' + r[2].l + ' ✕' + r[2].d + '</small></span>').join('') + '</div>';
+  return h + '</div>';
+}
+
+// ------------------------------------------------------------------ sheets
+let sheetEl = null;
+function closeSheet() { if (sheetEl) { sheetEl.remove(); sheetEl = null; } }
+function sheet(html, onClick) {
+  closeSheet();
+  sheetEl = document.createElement('div'); sheetEl.className = 'scrim';
+  sheetEl.innerHTML = '<div class="sheet" role="dialog" aria-modal="true">' + html + '</div>';
+  sheetEl.addEventListener('click', e => { if (e.target === sheetEl) return closeSheet(); if (onClick) onClick(e); });
+  document.getElementById('app').appendChild(sheetEl);
+  return sheetEl;
+}
+let toastEl = null, toastTimer = 0;
+function toast(msg) {
+  if (toastEl) toastEl.remove();
+  toastEl = document.createElement('div'); toastEl.className = 'toast'; toastEl.textContent = msg;
+  document.getElementById('app').appendChild(toastEl);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl && toastEl.remove(), 1600);
+}
+function addToOutfit(o, p) {
+  if (!o.pieces.some(x => x.k === p.k && x.id === p.id)) o.pieces.push(p);
+  save(); closeSheet(); toast('Added to ' + o.name); render();
+}
+function pickOutfit(p) {
+  sheet('<h2>Add to an outfit</h2><p>Pick one, or start a new outfit.</p>' +
+    S.outfits.map(o => '<button class="opt" data-o="' + o.id + '">' + esc(o.name) + '<small>' + o.pieces.length + ' pieces</small></button>').join('') +
+    '<label for="newOutfit">New outfit name</label><input type="text" id="newOutfit" value="Outfit ' + (S.outfits.length + 1) + '"><button class="btn" data-new>Create and add</button>', e => {
+    const b = e.target.closest('[data-o]');
+    if (b) return addToOutfit(S.outfits.find(o => o.id === b.dataset.o), p);
+    if (e.target.closest('[data-new]')) {
+      const o = { id: 'o' + Date.now(), name: document.getElementById('newOutfit').value.trim() || 'Outfit', pieces: [] };
+      S.outfits.push(o); addToOutfit(o, p);
+    }
+  });
+}
+function pickPiece(oid) {
+  const o = S.outfits.find(x => x.id === oid);
+  const liked = Object.keys(S.votes).filter(id => S.votes[id].v > 0 && byId[id]);
+  sheet('<h2>Add to ' + esc(o.name) + '</h2><p>From your closet' + (liked.length ? ' or your likes' : '') + '.</p>' +
+    S.closet.map(c => '<button class="opt" data-k="own" data-id="' + c.id + '">' + esc(c.name) + '<small>yours</small></button>').join('') +
+    liked.map(id => '<button class="opt" data-k="shop" data-id="' + id + '">' + esc(byId[id].brand + ' ' + byId[id].title) + '<small>$' + byId[id].price + '</small></button>').join(''), e => {
+    const b = e.target.closest('[data-k]'); if (b) addToOutfit(o, { k: b.dataset.k, id: b.dataset.id });
+  });
+}
+function closetForm() {
+  let photo = '';
+  const kinds = Object.keys(KIND);
+  const el = sheet('<h2>Add a piece</h2><p>Name it with the brand if you know it, like “Rhone commuter shirt”. The name is how your style is read.</p>' +
+    '<label for="cName">Name</label><input type="text" id="cName" placeholder="What is it?">' +
+    '<label for="cKind">Type</label><select id="cKind">' + kinds.map(k => '<option>' + k + '</option>').join('') + '</select>' +
+    '<label for="cColor">Main color</label><select id="cColor">' + COLOR_NAMES.map(k => '<option>' + k + '</option>').join('') + '</select>' +
+    '<label for="cPhoto">Photo (optional)</label><input type="file" id="cPhoto" accept="image/*">' +
+    '<button class="btn" data-save>Add to closet</button>', e => {
+    if (!e.target.closest('[data-save]')) return;
+    const name = document.getElementById('cName').value.trim();
+    if (!name) { document.getElementById('cName').focus(); return; }
+    const c = { id: 'c' + Date.now(), name, kind: document.getElementById('cKind').value, color: document.getElementById('cColor').value };
+    S.closet.push(c); if (photo) savePhoto(c.id, photo);
+    save(); closeSheet(); render();
+  });
+  el.querySelector('#cPhoto').addEventListener('change', e => {
+    const file = e.target.files[0]; if (!file) return;
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, 360 / Math.max(img.width, img.height)), cv = document.createElement('canvas');
+      cv.width = img.width * k; cv.height = img.height * k;
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      photo = cv.toDataURL('image/jpeg', 0.78); URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+function settings() {
+  const f = (id, label, val) => '<label for="' + id + '">' + label + '</label><input type="text" id="' + id + '" value="' + esc(val.join(', ')) + '">';
+  sheet('<h2>Sizes and brands</h2><p>Comma separated. Leave a size blank to stop filtering on it. Saved to ' + storage + '.</p>' +
+    f('sWaist', 'Pants waist', S.sizes.waist) + f('sLen', 'Pants length', S.sizes.length) + f('sTops', 'Tops', S.sizes.tops) + f('sShoes', 'Shoes (US and EU)', S.sizes.shoes) +
+    f('bLike', 'Brands I like', S.brands.liked) + f('bBlock', 'Blocked brands', S.brands.blocked) + f('bHigh', 'Too high end', S.brands.tooHigh) +
+    '<button class="btn" data-save>Save</button><button class="btn ghost" data-reset>Clear all swipes and start over</button>', e => {
+    const list = id => document.getElementById(id).value.split(',').map(s => s.trim()).filter(Boolean);
+    if (e.target.closest('[data-save]')) {
+      S.sizes = { waist: list('sWaist'), length: list('sLen'), tops: list('sTops'), shoes: list('sShoes') };
+      S.brands = { liked: list('bLike'), blocked: list('bBlock'), tooHigh: list('bHigh') };
+      save(); queue = null; closeSheet(); render(); toast('Saved');
+    }
+    if (e.target.closest('[data-reset]')) { S.votes = {}; S.stats = {}; history = []; save(); queue = null; closeSheet(); render(); toast('Swipes cleared'); }
+  });
+}
+
+// ------------------------------------------------------------------ shell
+const TABS = [['discover', 'Discover', 'M5 5h11v14H5z M9 3h11v14'], ['likes', 'Likes', 'M12 20s-7-4.6-7-10a4 4 0 0 1 7-2.4A4 4 0 0 1 19 10c0 5.4-7 10-7 10z'], ['outfits', 'Outfits', 'M12 6a2 2 0 1 1 2-2 M12 6v2l8 6v2H4v-2l8-6'], ['closet', 'Closet', 'M5 3h14v18H5z M12 3v18 M9.5 11v2 M14.5 11v2'], ['style', 'Style', 'M4 19h16 M7 19V9 M12 19V5 M17 19v-7']];
+function render() {
+  document.getElementById('mode').innerHTML = [['you', 'For you'], ['stretch', 'Stretch']].map(m => '<button data-act="mode" data-v="' + m[0] + '" aria-pressed="' + (mode === m[0]) + '">' + m[1] + '</button>').join('');
+  document.getElementById('mode').style.visibility = tab === 'discover' ? 'visible' : 'hidden';
+  const likes = Object.values(S.votes).filter(v => v.v > 0).length;
+  document.getElementById('nav').innerHTML = TABS.map(t => '<button data-act="tab" data-v="' + t[0] + '"' + (tab === t[0] ? ' aria-current="page"' : '') + '><svg viewBox="0 0 24 24"><path d="' + t[2] + '"/></svg>' + t[1] + (t[0] === 'likes' && likes ? '<span class="n">' + likes + '</span>' : '') + '</button>').join('');
+  const main = document.getElementById('main'), sc = main.querySelector('.scroll'), keep = sc ? sc.scrollTop : 0;
+  main.innerHTML = tab === 'discover' ? viewDiscover() : tab === 'likes' ? viewLikes() : tab === 'outfits' ? viewOutfits() : tab === 'closet' ? viewCloset() : viewStyle();
+  const sc2 = main.querySelector('.scroll'); if (sc2) sc2.scrollTop = keep;
+  if (tab === 'discover') bindSwipe();
+}
+document.getElementById('app').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || b.closest('.scrim')) return;
+  const a = b.dataset.act, v = b.dataset.v, id = b.dataset.id;
+  if (a === 'tab') { tab = v; closeWhy(); render(); const s = document.querySelector('.scroll'); if (s) s.scrollTop = 0; }
+  else if (a === 'mode') { mode = v; queue = null; flipped = false; render(); }
+  else if (a === 'cat') { cat = v; queue = null; flipped = false; render(); }
+  else if (a === 'like') decide('right');
+  else if (a === 'pass') decide('left');
+  else if (a === 'up') decide('up');
+  else if (a === 'flip') { flipped = !flipped; const c = document.querySelector('#deck .card:not(.under)'); if (c) c.classList.toggle('flipped', flipped); }
+  else if (a === 'undo') { const last = history.pop(); if (last) { closeWhy(); unvote(last); flipped = false; buildQueue(last); render(); } }
+  else if (a === 'repass') { Object.keys(S.votes).forEach(i => { if (S.votes[i].v < 0) unvote(i); }); queue = null; render(); }
+  else if (a === 'settings') settings();
+  else if (a === 'unlike') { unvote(id); queue = null; render(); }
+  else if (a === 'outfit-add') pickOutfit({ k: b.dataset.k, id });
+  else if (a === 'outfit-new') { S.outfits.push({ id: 'o' + Date.now(), name: 'Outfit ' + (S.outfits.length + 1), pieces: [] }); save(); render(); }
+  else if (a === 'outfit-pick') pickPiece(id);
+  else if (a === 'outfit-del') { S.outfits = S.outfits.filter(o => o.id !== id); save(); render(); }
+  else if (a === 'outfit-rm') { const [oid, k] = b.dataset.o.split('|'), o = S.outfits.find(x => x.id === oid); o.pieces = o.pieces.filter(p => !(p.k === k && p.id === id)); save(); render(); }
+  else if (a === 'closet-new') closetForm();
+  else if (a === 'closet-del') { S.closet = S.closet.filter(c => c.id !== id); S.outfits.forEach(o => { o.pieces = o.pieces.filter(p => !(p.k === 'own' && p.id === id)); }); savePhoto(id, null); save(); queue = null; render(); }
+  else if (a === 'curious') { S.curious = S.curious.includes(v) ? S.curious.filter(x => x !== v) : S.curious.concat(v); save(); queue = null; render(); }
+});
+document.addEventListener('keydown', e => {
+  if (tab !== 'discover' || sheetEl || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if (e.key === 'ArrowRight') decide('right'); else if (e.key === 'ArrowLeft') decide('left'); else if (e.key === 'ArrowUp') decide('up');
+});
+render();
+cloudInit();
+})();
+</script>
+</body>
+</html>
